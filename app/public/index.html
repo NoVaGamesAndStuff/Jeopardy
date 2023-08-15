@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Jeopardy Project</title>
+</head>
+<body>
+    <!-- TODO: move room.html into index.html -->
+    <h1>Jeopardy Project</h1>
+    <div>
+        <label for="display_name">Display Name:</label>
+        <input id="display_name" name="display_name" type="text" />
+    </div>
+
+    <button id="createRoom" onclick="createRoom()">Create Room</button><br><br>
+    <button id="joinRoom" onclick="joinRoom()">Join Room</button>
+
+    <script>
+        function createRoom() {
+            let displayName = document.getElementById('display_name').value;
+
+            fetch('http://localhost:3000/createRoom', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ displayName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                let roomKey = data.newRoom.key;
+                window.location.href = `http://localhost:3000/room/${roomKey}`;
+            })
+            .catch(error => {
+                console.error('Error creating room:', error);
+            });
+        }
+
+        function joinRoom() {
+            let displayName = document.getElementById('display_name').value;
+            const roomKey = prompt('Enter the Room Key:');
+
+            if (!roomKey) {
+                return;
+            }
+
+            fetch('http://localhost:3000/joinRoom', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ displayName, roomKey })
+            })
+            .then(response => response.json())
+            .then(data => {
+                window.location.href = `http://localhost:3000/room/${roomKey}`;
+            })
+            .catch(error => {
+                console.error('Error joining room:', error);
+            });
+        }
+    </script>
+</body>
+</html>

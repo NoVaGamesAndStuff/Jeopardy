@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Room</title>
+    <style>
+        table { border-collapse: collapse; } 
+        td, th { border: 1px solid black; padding: 8px; }
+    </style>
+</head>
+<body>
+    <h1>Room Players</h1>
+    <table id="playerTable">
+        <tr>
+            <th>Display Name</th>
+            <th>Score</th>
+        </tr>
+    </table>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        const roomKey = window.location.pathname.split('/').pop();
+
+        socket.emit('getRoom', { roomKey });
+        
+        socket.on('updatePlayers', (players) => {
+            console.log('Going to update the players:', players);
+            updatePlayerTable(players);
+        });
+
+        socket.on('getRoomInfo', (room) => {
+            console.log('Got room info:', room);
+            updatePlayerTable(room.players);
+        });
+
+        function updatePlayerTable(players) {
+            console.log('Received updated player data:', players);
+            const playerTable = document.getElementById('playerTable');
+
+            // Clear existing rows from the table
+            while (playerTable.rows.length > 1) {
+                playerTable.deleteRow(1);
+            }
+
+            // Add new rows to the table
+            players.forEach(player => {
+                console.log(player);
+                const row = playerTable.insertRow();
+                const nameCell = row.insertCell(0);
+                const scoreCell = row.insertCell(1);
+                nameCell.textContent = player.name;
+                scoreCell.textContent = player.score;
+            });
+        }
+    </script>
+</body>
+</html>
