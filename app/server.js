@@ -1,5 +1,4 @@
 const express = require('express');
-// const cookieParser = require('cookie-parser');
 const app = express();
 const fs = require('fs');
 const http = require('http');
@@ -10,7 +9,6 @@ const port = 3000;
 const hostname = 'localhost';
 app.use(express.static('public'));
 app.use(express.json());
-// app.use(cookieParser());
 
 var serverData = {
     rooms: []
@@ -35,23 +33,23 @@ app.get('/room/:roomkey', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-    socket.on('joinRoom', ({ roomKeyCookie, user }) => {
-        console.log('a user connected to room ' + roomKeyCookie);
-        const room = serverData.rooms.find(room => room.key === roomKeyCookie);
-        
-        if (room) {
-            room.players.push(user);
-            console.log('Current players: ', room.players);
-
-            socket.join(roomKeyCookie);
-            io.to(roomKeyCookie).emit('updatePlayers', room.players);
-        }
-    });
-
-    socket.on('getRoom', ({ roomKey }) => {
+    socket.on('getRoom', (roomKey) => {
         const room = serverData.rooms.find(room => room.key === roomKey);
         socket.join(roomKey);
-        io.to(roomKey).emit('getRoomInfo', room);
+
+        if (room.host.id === null) {
+            room.host.id = socket.id;
+        }
+
+        let isHost = false;
+        if (room.host.id === socket.id) {
+            console.log('The host connected.');
+            isHost = true;
+        } else {
+            console.log('A player connected.');
+        }
+
+        io.to(roomKey).emit('getRoomInfo', { room, isHost });
     });
 
     socket.on('disconnect', () => {
@@ -59,52 +57,12 @@ io.on('connection', (socket) => {
     });
 });
 
-// serverData ideal structure: 
-// var serverData = {
-//     rooms: [
-//         {
-//             key: "akdnjr", 
-//             players: [
-//                 {
-//                     dispName: "Player One Game One", 
-//                     score: 0,
-//                     isHost: true,
-//                     isPlayer: false
-//                 }, 
-//                 {
-//                     dispName: "Player Two Game One", 
-//                     score: 0,
-//                     isHost: false,
-//                     isPlayer: true
-//                 }
-//             ]
-//         }, 
-//         {
-//             key: "oejnxz", 
-//             players: [
-//                 {
-//                     dispName: "Player One Game Two", 
-//                     score: 0,
-//                     isHost: false,
-//                     isPlayer: true
-//                 },
-//                 {
-//                     dispName: "Player Two Game Two", 
-//                     score: 0,
-//                     isHost: true,
-//                     isPlayer: false
-//                 }
-//             ]
-//         }
-//     ]
-// };
-
 app.post('/joinRoom', (req, res) => {
     const { displayName, roomKey } = req.body;
     let room = serverData.rooms.find(room => room.key === roomKey);
 
     if (room) {
-        room.players.push({ name: displayName, score: 0 });
+        room.players.push({ name: displayName, score: 0, id: null });
         res.status(200).json({ room });
     } else {
         res.status(404).json({ error: 'Room not found' });
@@ -116,12 +74,12 @@ app.post('/createRoom', (req, res) => {
     
     let newRoom = {
         key: roomKey,
-        players: [
-            {
-                name: req.body.displayName,
-                score: 0
-            }
-        ]
+        host: {
+            name: req.body.displayName,
+            score: 0,
+            id: null
+        },
+        players: []
     };
 
     serverData.rooms.push(newRoom);

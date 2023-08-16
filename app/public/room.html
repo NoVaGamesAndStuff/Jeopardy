@@ -9,7 +9,20 @@
     </style>
 </head>
 <body>
-    <h1>Room Players</h1>
+    <h1>Jeopardy</h1>
+
+    <div id="roomInfoContainer" style="display: none;">
+        <p id="roomCode" style="font-weight: bold;"></p>
+        <p id="hostName" style="font-weight: bold;"></p>
+        <button id="startGameButton" style="display: none;" onclick="startGame()">Start Game</button>
+    </div>
+
+    <br>
+
+    <div>
+        Players:
+    </div>
+
     <table id="playerTable">
         <tr>
             <th>Display Name</th>
@@ -21,17 +34,28 @@
     <script>
         const socket = io();
         const roomKey = window.location.pathname.split('/').pop();
+        const socketId = socket.id;
 
-        socket.emit('getRoom', { roomKey });
-        
-        socket.on('updatePlayers', (players) => {
-            console.log('Going to update the players:', players);
-            updatePlayerTable(players);
-        });
+        socket.emit('getRoom', roomKey);
 
-        socket.on('getRoomInfo', (room) => {
+        socket.on('getRoomInfo', ({ room, isHost }) => {
             console.log('Got room info:', room);
             updatePlayerTable(room.players);
+
+            // Display room code and host name if the host connected
+            if (room.host) {
+                const roomCodeContainer = document.getElementById('roomInfoContainer');
+                const roomCodeElement = document.getElementById('roomCode');
+                const hostNameElement = document.getElementById('hostName');
+                roomCodeElement.textContent = `Room Code: ${room.key}`;
+                hostNameElement.textContent = `The host is ${room.host.name}`;
+                roomCodeContainer.style.display = 'block';
+            }
+
+            if (isHost) {
+                const startGameButton = document.getElementById('startGameButton');
+                startGameButton.style.display = 'block';
+            }
         });
 
         function updatePlayerTable(players) {
@@ -52,6 +76,10 @@
                 nameCell.textContent = player.name;
                 scoreCell.textContent = player.score;
             });
+        }
+
+        function startGame() {
+            console.log('Game will now start.');
         }
     </script>
 </body>
