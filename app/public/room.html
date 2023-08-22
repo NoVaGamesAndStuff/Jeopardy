@@ -30,57 +30,193 @@
         </tr>
     </table>
 
+    <div id="boardContainer" style="display: block;">
+        
+    </div>
+
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
-        const socket = io();
-        const roomKey = window.location.pathname.split('/').pop();
-        const socketId = socket.id;
+    const socket = io();
+    const roomKey = window.location.pathname.split('/').pop();
+    const socketId = socket.id;
+    let boardContainer = document.getElementById("boardContainer");
+    let doubleJeopardy = false;
+    let singleJeopardyCells = 30; 
 
-        socket.emit('getRoom', roomKey);
+    socket.emit('getRoom', roomKey);
 
-        socket.on('getRoomInfo', ({ room, isHost }) => {
-            console.log('Got room info:', room);
-            updatePlayerTable(room.players);
+    socket.on('getRoomInfo', ({ room, isHost }) => {
+        console.log('Got room info:', room);
+        updatePlayerTable(room.players);
 
-            // Display room code and host name if the host connected
-            if (room.host) {
-                const roomCodeContainer = document.getElementById('roomInfoContainer');
-                const roomCodeElement = document.getElementById('roomCode');
-                const hostNameElement = document.getElementById('hostName');
-                roomCodeElement.textContent = `Room Code: ${room.key}`;
-                hostNameElement.textContent = `The host is ${room.host.name}`;
-                roomCodeContainer.style.display = 'block';
-            }
+        if (room.host) {
+            const roomCodeContainer = document.getElementById('roomInfoContainer');
+            const roomCodeElement = document.getElementById('roomCode');
+            const hostNameElement = document.getElementById('hostName');
+            roomCodeElement.textContent = `Room Code: ${room.key}`;
+            hostNameElement.textContent = `The host is ${room.host.name}`;
+            roomCodeContainer.style.display = 'block';
+        }
 
-            if (isHost) {
-                const startGameButton = document.getElementById('startGameButton');
-                startGameButton.style.display = 'block';
-            }
+        if (isHost) {
+            const startGameButton = document.getElementById('startGameButton');
+            startGameButton.style.display = 'block';
+        }
+    });
+
+    function updatePlayerTable(players) {
+        console.log('Received updated player data:', players);
+        const playerTable = document.getElementById('playerTable');
+
+        while (playerTable.rows.length > 1) {
+            playerTable.deleteRow(1);
+        }
+
+        players.forEach(player => {
+            console.log(player);
+            const row = playerTable.insertRow();
+            const nameCell = row.insertCell(0);
+            const scoreCell = row.insertCell(1);
+            nameCell.textContent = player.name;
+            scoreCell.textContent = player.score;
         });
+    }
 
-        function updatePlayerTable(players) {
-            console.log('Received updated player data:', players);
-            const playerTable = document.getElementById('playerTable');
+    let selectedCells = new Map();
 
-            // Clear existing rows from the table
-            while (playerTable.rows.length > 1) {
-                playerTable.deleteRow(1);
-            }
+    function displayZoomedCell(baseValue, questionText) {
+        let zoomedCell = document.createElement('div');
+        zoomedCell.style.backgroundColor = 'blue';
+        zoomedCell.style.textShadow = '2px 2px 2px black';
+        zoomedCell.style.color = 'white';
+        zoomedCell.style.verticalAlign = 'middle';
+        zoomedCell.style.textAlign = 'center';
+        zoomedCell.style.fontSize = '36px';
+        zoomedCell.style.padding = '40px';
+        zoomedCell.style.position = 'absolute';
+        zoomedCell.style.top = '50%';
+        zoomedCell.style.left = '50%';
+        zoomedCell.style.transform = 'translate(-50%, -50%)';
+        zoomedCell.style.cursor = 'pointer';
+        zoomedCell.textContent = `$${baseValue}\n${questionText}`;
 
-            // Add new rows to the table
-            players.forEach(player => {
-                console.log(player);
-                const row = playerTable.insertRow();
-                const nameCell = row.insertCell(0);
-                const scoreCell = row.insertCell(1);
-                nameCell.textContent = player.name;
-                scoreCell.textContent = player.score;
+        boardContainer.innerHTML = ''; 
+        boardContainer.appendChild(zoomedCell);
+
+        zoomedCell.addEventListener('click', function () {
+            boardContainer.innerHTML = '';
+            displayBoard(createBoard(6, 6), doubleJeopardy);
+
+            
+            selectedCells.forEach((questionText, cell) => {
+                cell.style.color = 'red';
+                cell.style.cursor = 'default'; 
+                cell.removeEventListener('click', handleCellClick); 
             });
+
+            
+            selectedCells.forEach((questionText, cell) => {
+                cell.style.backgroundColor = 'gray'; 
+            });
+        });
+    }
+
+    function handleCellClick(event) {
+    console.log("Cell clicked!");
+    
+    const clickedCell = event.target;
+
+    if (!selectedCells.has(clickedCell.id)) { 
+        console.log("Unclicked cell clicked!");
+        const baseValue = parseInt(clickedCell.textContent.replace('$', ''));
+        const questionText = 'Question'; 
+        const questionID = clickedCell.id;
+        selectedCells.set(questionID, questionID); 
+
+        clickedCell.style.backgroundColor = 'gray'; 
+        clickedCell.removeEventListener('click', handleCellClick); 
+        singleJeopardyCells--;
+
+        if (singleJeopardyCells === 0) {
+            doubleJeopardy = true;
         }
 
-        function startGame() {
-            console.log('Game will now start.');
+        displayZoomedCell(baseValue, questionText);
+    }
+}
+
+
+
+    function displayBoard(board, doubleJeopardy) {
+        while (boardContainer.firstChild) {
+            boardContainer.removeChild(boardContainer.firstChild);
         }
-    </script>
+
+        let jeopardyBoard = document.createElement('table');
+        jeopardyBoard.style.width = '1000px';
+        jeopardyBoard.style.height = '600px';
+        jeopardyBoard.style.float = 'center';
+
+        for (let i = 0; i < board.length; i++) {
+            let row = document.createElement('tr');
+
+            for (let j = 0; j < board[i].length; j++) {
+                let cell = document.createElement('td');
+                cell.style.backgroundColor = 'blue';
+                cell.style.textShadow = '2px 2px 2px black';
+                cell.style.color = 'white';
+                cell.style.verticalAlign = 'top';
+                cell.style.textAlign = 'center';
+                cell.id = i+j;
+
+                if (i === 0) {
+                    cell.style.height = '40px';
+                    cell.textContent = 'Category';
+                } else {
+                    cell.style.height = '100px';
+                    if (i >= 1 && i <= 5) {
+                        let baseValue = i * 200;
+
+                        if (doubleJeopardy) {
+                            baseValue *= 2;
+                        }
+
+                        cell.textContent = `$${baseValue}`;
+                        cell.addEventListener('click', handleCellClick);
+                    } else {
+                        cell.textContent = 'Question';
+                    }
+                }
+
+                row.appendChild(cell);
+            }
+            jeopardyBoard.appendChild(row);
+        }
+        boardContainer.appendChild(jeopardyBoard);
+    }
+
+    function createBoard(rows, columns) {
+        let board = [];
+
+        for (let i = 0; i < rows; i++) {
+            let row = [];
+
+            for (let j = 0; j < columns; j++) {
+                row.push((i + j) % 2 === 0);
+            }
+            board.push(row);
+        }
+        return board;
+    }
+
+    function startGame() {
+        console.log("board being created");
+        
+        let jeopardyBoard = createBoard(6, 6);
+        displayBoard(jeopardyBoard, doubleJeopardy);
+    }
+</script>
+
+
 </body>
 </html>
