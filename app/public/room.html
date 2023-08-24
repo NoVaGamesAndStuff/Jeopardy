@@ -32,7 +32,13 @@
 
     <div id="boardContainer" style="display: block;">
         
-    </div>
+    <!-- </div> -->
+    <!-- <div id="wagerContainer" style="display: block;"> -->
+        <!-- <button id="setWagerButton"onclick="setWager()">Set Wager</button> -->
+        <!-- <input id="wager_input" name="wager_input" type="text" /> -->
+        
+    <!-- </div> -->
+
 
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
@@ -41,7 +47,9 @@
     const socketId = socket.id;
     let boardContainer = document.getElementById("boardContainer");
     let doubleJeopardy = false;
-    let singleJeopardyCells = 30; 
+    let finalJeopardy = false;
+    let singleJeopardyCells = 30;
+    let doubleJeopardyCells = 60; 
 
     socket.emit('getRoom', roomKey);
 
@@ -103,9 +111,18 @@
         boardContainer.innerHTML = ''; 
         boardContainer.appendChild(zoomedCell);
 
+
+
         zoomedCell.addEventListener('click', function () {
             boardContainer.innerHTML = '';
-            displayBoard(createBoard(6, 6), doubleJeopardy);
+            if (!finalJeopardy){
+                displayBoard(createBoard(6, 6), doubleJeopardy, finalJeopardy);
+            }
+            else{
+
+                displayBoard(createBoard(2,1), doubleJeopardy, finalJeopardy);
+            }      
+            
 
             
             selectedCells.forEach((questionText, cell) => {
@@ -132,18 +149,24 @@
             clickedCell.style.backgroundColor = 'gray'; 
             clickedCell.removeEventListener('click', handleCellClick); 
             singleJeopardyCells--;
+            doubleJeopardyCells--;
 
             if (singleJeopardyCells === 0) {
                 doubleJeopardy = true;
             }
+            if (doubleJeopardyCells === 0){
+                doubleJeopardy = false;
+                finalJeopardy = true;
+            }
+
 
             displayZoomedCell(baseValue, questionText);
         }
-}
+    }
 
 
 
-    function displayBoard(board, doubleJeopardy) {
+    function displayBoard(board, doubleJeopardy, finalJeopardy) {
         while (boardContainer.firstChild) {
             boardContainer.removeChild(boardContainer.firstChild);
         }
@@ -215,8 +238,33 @@
         console.log("board being created");
         
         let jeopardyBoard = createBoard(6, 6);
-        displayBoard(jeopardyBoard, doubleJeopardy);
+        displayBoard(jeopardyBoard, doubleJeopardy, finalJeopardy);
     }
+
+    */function getCurrentGameState(){
+        if(doubleJeopardy){
+            return 2;
+        }
+        else if(finalJeopardy){
+            return 3;
+        }
+        else
+        {
+            return 1;
+        }
+    }
+
+    function setWager(wager, gameState){
+        console.log("Wager set");
+
+
+        if(singleJeopardy)
+        if(currentPlayer.score < wager){
+            console.log("Your score must be greater than or equal to your wager.")
+        }
+
+    }
+    /*
 </script>
 
 
