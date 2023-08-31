@@ -542,9 +542,6 @@ app.post('/joinRoom', (req, res) => {
 
     if (room) {
         room.players.push({ name: displayName, score: 0, id: null });
-        if () {
-
-        }
         res.status(200).json({ room });
     } else {
         res.status(404).json({ error: 'Room not found' });
