@@ -6,43 +6,94 @@
     <style>
         table { border-collapse: collapse; } 
         td, th { border: 1px solid black; padding: 8px; }
+        div.zoomedCell { 
+            background-color: blue; 
+            text-shadow: 2px 2px 2px black;
+            color: white;
+            vertical-align: middle;
+            text-align: center;
+            font-size: 36px;
+            padding: 40px; 
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <h1>Jeopardy</h1>
+    <!-- Container for initial game behavior: displaying table of current players, room code, who the host is, and starting the game (host only) -->
+    <div id="initialViewContainer" style="display: block;">
+        <h1>Jeopardy</h1>
 
-    <div id="roomInfoContainer" style="display: none;">
-        <p id="roomCode" style="font-weight: bold;"></p>
-        <p id="hostName" style="font-weight: bold;"></p>
-        <button id="startGameButton" style="display: none;" onclick="startGame()">Start Game</button>
+        <div id="roomInfoContainer" style="display: none;">
+            <p id="roomCode" style="font-weight: bold;"></p>
+            <p id="hostName" style="font-weight: bold;"></p>
+            <button id="startGameButton" style="display: none;" onclick="startGame()">Start Game</button>
+        </div>
+    
+        <br>
+    
+        <table id="playerTable">
+            <tr>
+                <th>Display Name</th>
+                <th>Score</th>
+            </tr>
+        </table>
     </div>
 
-    <br>
+    <!-- Container for all PC behavior: displaying the board (single, double, final jeopardy) -->
+    <div id="boardContainer" style="display: none;"></div>
 
-    <div>
-        Players:
+    <!-- Container for all Host behavior: displaying question info, unlocking questions, correct/incorrect answers, etc. -->
+    <div id="hostViewContainer" style="display: none;">
+        <div id="waitingForQuestionSelect" style="display: block;">Waiting for the player to select a question...</div>
+        <div id="questionContainer" style="display: none;"></div>
+        <div id="answerContainer" style="display: none;"></div>
     </div>
 
-    <table id="playerTable">
-        <tr>
-            <th>Display Name</th>
-            <th>Score</th>
-        </tr>
-    </table>
+    <!-- Container for all player behavior: buzzer, displaying score, etc. -->
+    <div id="playerViewContainer" style="display: none;">
+        <button id="buzzer" disabled="true">
+            <img src="/assets/buzzer_enabled.jpg" alt="enabled buzzer">
+        </button>
+
+        <!-- <div id="playerScore"></div> -->
+    </div>
+
+    <!-- <div id="wagerContainer" style="display: block;"> -->
+        <!-- <button id="setWagerButton"onclick="setWager()">Set Wager</button> -->
+        <!-- <input id="wager_input" name="wager_input" type="text" /> -->
+    <!-- </div> -->
+
+    <!-- Container for end game behavior: displaying the winner -->
+    <div id="gameEndViewContainer" style="display: none;"></div>
 
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
         const socket = io();
         const roomKey = window.location.pathname.split('/').pop();
-        const socketId = socket.id;
+        let room = null;
+        let currDispName = localStorage.getItem('currentDisplayName');
 
-        socket.emit('getRoom', roomKey);
+        let initialViewContainer = document.getElementById('initialViewContainer');
+        let boardContainer = document.getElementById('boardContainer');
+        let hostViewContainer = document.getElementById('hostViewContainer');
+        let playerViewContainer = document.getElementById('playerViewContainer');
+        let gameEndViewContainer = document.getElementById('gameEndViewContainer');
+
+        let doubleJeopardy = false;
+        let finalJeopardy = false;
+        let singleJeopardyCells = 30;
+        let doubleJeopardyCells = 60; 
+
+        socket.emit('getRoom', { roomKey, currDispName });
 
         socket.on('getRoomInfo', ({ room, isHost }) => {
             console.log('Got room info:', room);
             updatePlayerTable(room.players);
 
-            // Display room code and host name if the host connected
             if (room.host) {
                 const roomCodeContainer = document.getElementById('roomInfoContainer');
                 const roomCodeElement = document.getElementById('roomCode');
@@ -56,18 +107,18 @@
                 const startGameButton = document.getElementById('startGameButton');
                 startGameButton.style.display = 'block';
             }
+
+            roomData = room;
         });
 
         function updatePlayerTable(players) {
             console.log('Received updated player data:', players);
             const playerTable = document.getElementById('playerTable');
 
-            // Clear existing rows from the table
             while (playerTable.rows.length > 1) {
                 playerTable.deleteRow(1);
             }
 
-            // Add new rows to the table
             players.forEach(player => {
                 console.log(player);
                 const row = playerTable.insertRow();
@@ -79,8 +130,200 @@
         }
 
         function startGame() {
-            console.log('Game will now start.');
+            console.log('Starting the game...');
+            socket.emit('startGame', roomKey);
         }
+
+        socket.on('gameStartView', (entity) => {
+            console.log('Setting game view for ' + entity);
+
+            if (entity == 'host') {
+                initialViewContainer.style.display = 'none';
+                hostViewContainer.style.display = 'block';
+            } else if (entity == 'pc') {
+                let jeopardyBoard = createBoard(6, 6);
+                displayBoard(jeopardyBoard, doubleJeopardy, finalJeopardy);
+                roomInfoContainer.style.display = 'none';
+                boardContainer.style.display = 'block';
+            } else if (entity == 'player') {
+                initialViewContainer.style.display = 'none';
+                playerViewContainer.style.display = 'block';
+            } else {
+                console.log('Unrecognized entity.');
+            }
+        });
+
+        socket.on('questionSelected', (entity) => {
+            if (entity == 'host') {
+                document.getElementById('questionContainer').style.display = 'block';
+            } else if (entity == 'player') {
+
+            } else {
+                console.log('Unrecognized entity.');
+            }
+        });
+        
+        let selectedCells = new Set();
+
+        function displayZoomedCell(baseValue, questionText) {
+            let zoomedCell = document.createElement('div');
+            /*zoomedCell.style.backgroundColor = 'blue';
+            zoomedCell.style.textShadow = '2px 2px 2px black';
+            zoomedCell.style.color = 'white';
+            zoomedCell.style.verticalAlign = 'middle';
+            zoomedCell.style.textAlign = 'center';
+            zoomedCell.style.fontSize = '36px';
+            zoomedCell.style.padding = '40px';
+            zoomedCell.style.position = 'absolute';
+            zoomedCell.style.top = '50%';
+            zoomedCell.style.left = '50%';
+            zoomedCell.style.transform = 'translate(-50%, -50%)';
+            zoomedCell.style.cursor = 'pointer';*/
+            zoomedCell.className = 'zoomedCell';
+            zoomedCell.textContent = `$${baseValue}\n${questionText}`;
+
+            boardContainer.innerHTML = ''; 
+            boardContainer.appendChild(zoomedCell);
+
+            zoomedCell.addEventListener('click', function () {
+                boardContainer.innerHTML = '';
+                if (!finalJeopardy) {
+                    displayBoard(createBoard(6, 6), doubleJeopardy, finalJeopardy);
+                } else {
+                    displayBoard(createBoard(2,1), doubleJeopardy, finalJeopardy);
+                }
+                
+                selectedCells.forEach((questionText, cell) => {
+                    cell.style.color = 'red';
+                    cell.style.cursor = 'default'; 
+                    cell.style.backgroundColor = 'gray';
+                    cell.removeEventListener('click', handleCellClick); 
+                });
+            });
+        }
+
+        function handleCellClick(event) {
+            console.log("Cell clicked!");
+            
+            const clickedCell = event.target;
+
+            if (!selectedCells.has(clickedCell.id)) { 
+                console.log("Unclicked cell clicked!");
+                const baseValue = parseInt(clickedCell.textContent.replace('$', ''));
+                const questionID = clickedCell.id;
+                const questionText = `${questionID}`; 
+                selectedCells.add(questionID); 
+
+                clickedCell.style.backgroundColor = 'gray'; 
+                clickedCell.removeEventListener('click', handleCellClick); 
+                singleJeopardyCells--;
+                doubleJeopardyCells--;
+
+                if (singleJeopardyCells === 0) {
+                    doubleJeopardy = true;
+                }
+                if (doubleJeopardyCells === 0){
+                    doubleJeopardy = false;
+                    finalJeopardy = true;
+                }
+
+                displayZoomedCell(baseValue, questionText);
+                socket.emit('selectQuestion', roomKey);
+            }
+        }
+
+        function displayBoard(board, doubleJeopardy, finalJeopardy) {
+            while (boardContainer.firstChild) {
+                boardContainer.removeChild(boardContainer.firstChild);
+            }
+
+            let jeopardyBoard = document.createElement('table');
+            jeopardyBoard.style.width = '1000px';
+            jeopardyBoard.style.height = '600px';
+            //jeopardyBoard.style.float = 'center';
+            jeopardyBoard.style.position = 'absolute';
+            jeopardyBoard.style.top = '50%';
+            jeopardyBoard.style.left = '50%';
+            jeopardyBoard.style.transform = 'translate(-50%, -50%)';
+
+            for (let i = 0; i < board.length; i++) {
+                let row = document.createElement('tr');
+
+                for (let j = 0; j < board[i].length; j++) {
+                    let cell = document.createElement('td');
+                    cell.style.backgroundColor = 'blue';
+                    cell.style.textShadow = '2px 2px 2px black';
+                    cell.style.color = 'white';
+                    cell.style.verticalAlign = 'top';
+                    cell.style.textAlign = 'center';
+                    let idStr = ""+i+j;
+                    cell.id = parseInt(idStr);
+
+                    if (i === 0) {
+                        cell.style.height = '40px';
+                        cell.textContent = 'Category';
+                    } else {
+                        cell.style.height = '100px';
+                        if (i >= 1 && i <= 5) {
+                            let baseValue = i * 200;
+
+                            if (doubleJeopardy) {
+                                baseValue *= 2;
+                                cell.id = idStr + "d";
+                            }
+
+                            cell.textContent = `$${baseValue}`;
+                            cell.addEventListener('click', handleCellClick);
+                        } else {
+                            cell.textContent = 'Question';
+                        }
+                    }
+
+                    row.appendChild(cell);
+                }
+                jeopardyBoard.appendChild(row);
+            }
+            boardContainer.appendChild(jeopardyBoard);
+        }
+
+        function createBoard(rows, columns) {
+            let board = [];
+
+            for (let i = 0; i < rows; i++) {
+                let row = [];
+
+                for (let j = 0; j < columns; j++) {
+                    row.push((i + j) % 2 === 0);
+                }
+                board.push(row);
+            }
+            return board;
+        }
+
+        /*function getCurrentGameState(){
+            if(doubleJeopardy){
+                return 2;
+            }
+            else if(finalJeopardy){
+                return 3;
+            }
+            else
+            {
+                return 1;
+            }
+        }
+
+        function setWager(wager, gameState){
+            console.log("Wager set");
+
+
+            if(singleJeopardy)
+            if(currentPlayer.score < wager){
+                console.log("Your score must be greater than or equal to your wager.")
+            }
+
+        }
+        */
     </script>
 </body>
 </html>
