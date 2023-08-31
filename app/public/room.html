@@ -74,6 +74,8 @@
     <script>
         const socket = io();
         const roomKey = window.location.pathname.split('/').pop();
+        const socketId = socket.id;
+        let wagerValue = 0;
         let room = null;
         let currDispName = localStorage.getItem('currentDisplayName');
 
@@ -286,6 +288,45 @@
             boardContainer.appendChild(jeopardyBoard);
         }
 
+        function setWager(wager, gameState){
+            if(singleJeopardy){
+                if(currentPlayer.score < wager){
+                    console.log("Your score must be greater than or equal to your wager.")
+                }
+                else if(currentPlayer.score < wager || wager <= 1000){
+                    wagerValue = wager;
+                }
+                else if(currentPlayer.score > wager)
+                {
+                    wagerValue = wager;
+                }
+            }
+            if(doubleJeopardy){
+                if(currentPlayer.score < wager){
+                        console.log("Your score must be greater than or equal to your wager.")
+                    }
+                    else if(currentPlayer.score < wager || wager <= 2000){
+                        wagerValue = wager;
+                    }
+                    else if(currentPlayer.score > wager)
+                    {
+                        wagerValue = wager;
+                    }
+                }
+            if(finalJeopardy){
+                if(currentPlayer.score < wager){
+                    console.log("Your score must be greater than or equal to your wager.")
+                }
+                else
+                {
+                    wagerValue = wager;
+                }
+            }
+    
+            console.log("Wager set");
+    
+        }
+
         function createBoard(rows, columns) {
             let board = [];
 
@@ -298,32 +339,7 @@
                 board.push(row);
             }
             return board;
-        }
-
-        /*function getCurrentGameState(){
-            if(doubleJeopardy){
-                return 2;
-            }
-            else if(finalJeopardy){
-                return 3;
-            }
-            else
-            {
-                return 1;
-            }
-        }
-
-        function setWager(wager, gameState){
-            console.log("Wager set");
-
-
-            if(singleJeopardy)
-            if(currentPlayer.score < wager){
-                console.log("Your score must be greater than or equal to your wager.")
-            }
-
-        }
-        */
+        } 
     </script>
 </body>
 </html>
