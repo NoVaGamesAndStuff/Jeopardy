@@ -541,9 +541,10 @@ app.post('/joinRoom', (req, res) => {
     let room = serverData.rooms.find(room => room.key === roomKey);
 
     if (room) {
-        room.players.push({ name: displayName, score: 0, id: null });
-        if () {
-
+        let player = { name: displayName, score: 0, id: null };
+        room.players.push(player);
+        if (room.metadata.currentPlayer == null) {
+            room.metadata.currentPlayer = player;
         }
         res.status(200).json({ room });
     } else {
