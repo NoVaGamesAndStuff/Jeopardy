@@ -5,7 +5,6 @@
     <title>Jeopardy Project</title>
 </head>
 <body>
-    <!-- TODO: move room.html into index.html -->
     <h1>Jeopardy Project</h1>
     <div>
         <label for="display_name">Display Name:</label>
@@ -13,7 +12,8 @@
     </div>
 
     <button id="createRoom" onclick="createRoom()">Create Room</button><br><br>
-    <button id="joinRoom" onclick="joinRoom()">Join Room</button>
+    <button id="joinRoom" onclick="joinRoom()">Join Room</button><br><br>
+    <button id="joinRoomPC" onclick="joinRoomPC()">Join Room as Display PC</button><br><br>
 
     <script>
         function createRoom() {
@@ -39,6 +39,7 @@
         function joinRoom() {
             let displayName = document.getElementById('display_name').value;
             const roomKey = prompt('Enter the Room Key:');
+            localStorage.setItem('currentDisplayName', displayName);
 
             if (!roomKey) {
                 return;
@@ -50,6 +51,29 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ displayName, roomKey })
+            })
+            .then(response => response.json())
+            .then(data => {
+                window.location.href = `http://localhost:3000/room/${roomKey}`;
+            })
+            .catch(error => {
+                console.error('Error joining room:', error);
+            });
+        }
+
+        function joinRoomPC() {
+            const roomKey = prompt('Enter the Room Key:');
+
+            if (!roomKey) {
+                return;
+            }
+
+            fetch('http://localhost:3000/joinRoomPC', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ roomKey })
             })
             .then(response => response.json())
             .then(data => {
