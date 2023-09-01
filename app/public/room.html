@@ -20,6 +20,26 @@
             transform: translate(-50%, -50%);
             cursor: pointer;
         }
+        table.jeopardyboard {
+            width: 1000px;
+            height: 600px;
+            float: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        td.boardCell {
+            background-color: blue;
+            text-shadow: 2px 2px 2px black;
+            color: white;
+            vertical-align: top;
+            text-align: center;
+        }
+        .disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
     </style>
 </head>
 <body>
@@ -58,8 +78,6 @@
         <button id="buzzer" disabled="true">
             <img src="/assets/buzzer_enabled.jpg" alt="enabled buzzer">
         </button>
-
-        <!-- <div id="playerScore"></div> -->
     </div>
 
     <!-- <div id="wagerContainer" style="display: block;"> -->
@@ -76,7 +94,7 @@
         const roomKey = window.location.pathname.split('/').pop();
         const socketId = socket.id;
         let wagerValue = 0;
-        let room = null;
+        let board = null;
         let currDispName = localStorage.getItem('currentDisplayName');
 
         let initialViewContainer = document.getElementById('initialViewContainer');
@@ -89,6 +107,7 @@
         let finalJeopardy = false;
         let singleJeopardyCells = 30;
         let doubleJeopardyCells = 60; 
+        let selectedCells = new Set();
 
         socket.emit('getRoom', { roomKey, currDispName });
 
@@ -110,7 +129,7 @@
                 startGameButton.style.display = 'block';
             }
 
-            roomData = room;
+            board = room.board;
         });
 
         function updatePlayerTable(players) {
@@ -136,18 +155,17 @@
             socket.emit('startGame', roomKey);
         }
 
-        socket.on('gameStartView', (entity) => {
-            console.log('Setting game view for ' + entity);
+        socket.on('gameStartView', ({ entityName, obj }) => {
+            console.log('Setting game view for ' + entityName);
 
-            if (entity == 'host') {
+            if (entityName == 'host') {
                 initialViewContainer.style.display = 'none';
                 hostViewContainer.style.display = 'block';
-            } else if (entity == 'pc') {
-                let jeopardyBoard = createBoard(6, 6);
-                displayBoard(jeopardyBoard, doubleJeopardy, finalJeopardy);
+            } else if (entityName == 'pc') {
+                displayBoard(obj, doubleJeopardy, finalJeopardy);
                 roomInfoContainer.style.display = 'none';
                 boardContainer.style.display = 'block';
-            } else if (entity == 'player') {
+            } else if (entityName == 'player') {
                 initialViewContainer.style.display = 'none';
                 playerViewContainer.style.display = 'block';
             } else {
@@ -164,43 +182,18 @@
                 console.log('Unrecognized entity.');
             }
         });
-        
-        let selectedCells = new Set();
 
-        function displayZoomedCell(baseValue, questionText) {
+        function displayZoomedCell(questionText) {
             let zoomedCell = document.createElement('div');
-            /*zoomedCell.style.backgroundColor = 'blue';
-            zoomedCell.style.textShadow = '2px 2px 2px black';
-            zoomedCell.style.color = 'white';
-            zoomedCell.style.verticalAlign = 'middle';
-            zoomedCell.style.textAlign = 'center';
-            zoomedCell.style.fontSize = '36px';
-            zoomedCell.style.padding = '40px';
-            zoomedCell.style.position = 'absolute';
-            zoomedCell.style.top = '50%';
-            zoomedCell.style.left = '50%';
-            zoomedCell.style.transform = 'translate(-50%, -50%)';
-            zoomedCell.style.cursor = 'pointer';*/
             zoomedCell.className = 'zoomedCell';
-            zoomedCell.textContent = `$${baseValue}\n${questionText}`;
+            zoomedCell.textContent = questionText;
 
             boardContainer.innerHTML = ''; 
             boardContainer.appendChild(zoomedCell);
 
             zoomedCell.addEventListener('click', function () {
                 boardContainer.innerHTML = '';
-                if (!finalJeopardy) {
-                    displayBoard(createBoard(6, 6), doubleJeopardy, finalJeopardy);
-                } else {
-                    displayBoard(createBoard(2,1), doubleJeopardy, finalJeopardy);
-                }
-                
-                selectedCells.forEach((questionText, cell) => {
-                    cell.style.color = 'red';
-                    cell.style.cursor = 'default'; 
-                    cell.style.backgroundColor = 'gray';
-                    cell.removeEventListener('click', handleCellClick); 
-                });
+                displayBoard(board, doubleJeopardy, finalJeopardy);
             });
         }
 
@@ -211,10 +204,17 @@
 
             if (!selectedCells.has(clickedCell.id)) { 
                 console.log("Unclicked cell clicked!");
-                const baseValue = parseInt(clickedCell.textContent.replace('$', ''));
                 const questionID = clickedCell.id;
-                const questionText = `${questionID}`; 
                 selectedCells.add(questionID); 
+
+                let questionText = 'N/A'; 
+                if (questionID.charAt(0) == 's') {
+                    questionText = getQuestionText(board.Single, questionID);
+                } else if (questionID.charAt(0) == 'd') {
+                    questionText = getQuestionText(board.Double, questionID);
+                } else if (questionID.charAt(0) == 'f') {
+                    questionText = getQuestionText(board.Final, questionID);
+                }
 
                 clickedCell.style.backgroundColor = 'gray'; 
                 clickedCell.removeEventListener('click', handleCellClick); 
@@ -229,7 +229,7 @@
                     finalJeopardy = true;
                 }
 
-                displayZoomedCell(baseValue, questionText);
+                displayZoomedCell(questionText);
                 socket.emit('selectQuestion', roomKey);
             }
         }
@@ -240,52 +240,116 @@
             }
 
             let jeopardyBoard = document.createElement('table');
-            jeopardyBoard.style.width = '1000px';
-            jeopardyBoard.style.height = '600px';
-            //jeopardyBoard.style.float = 'center';
-            jeopardyBoard.style.position = 'absolute';
-            jeopardyBoard.style.top = '50%';
-            jeopardyBoard.style.left = '50%';
-            jeopardyBoard.style.transform = 'translate(-50%, -50%)';
+            jeopardyBoard.className = 'jeopardyboard';
 
-            for (let i = 0; i < board.length; i++) {
-                let row = document.createElement('tr');
-
-                for (let j = 0; j < board[i].length; j++) {
-                    let cell = document.createElement('td');
-                    cell.style.backgroundColor = 'blue';
-                    cell.style.textShadow = '2px 2px 2px black';
-                    cell.style.color = 'white';
-                    cell.style.verticalAlign = 'top';
-                    cell.style.textAlign = 'center';
-                    let idStr = ""+i+j;
-                    cell.id = parseInt(idStr);
-
-                    if (i === 0) {
-                        cell.style.height = '40px';
-                        cell.textContent = 'Category';
+            if (finalJeopardy == false) {
+                let currentValue = 0;
+                for (let i = 0; i < 6; i++) {
+                    let elements = [];
+                    if (doubleJeopardy) {
+                        if (i > 0) currentValue += 400;
+                        console.log('Getting row elements for value ' + currentValue);
+                        elements = retrieveBoardElements(i, board.Double, currentValue);
                     } else {
-                        cell.style.height = '100px';
-                        if (i >= 1 && i <= 5) {
-                            let baseValue = i * 200;
-
-                            if (doubleJeopardy) {
-                                baseValue *= 2;
-                                cell.id = idStr + "d";
-                            }
-
-                            cell.textContent = `$${baseValue}`;
-                            cell.addEventListener('click', handleCellClick);
-                        } else {
-                            cell.textContent = 'Question';
-                        }
+                        if (i > 0) currentValue += 200;
+                        elements = retrieveBoardElements(i, board.Single, currentValue);
                     }
 
-                    row.appendChild(cell);
+                    let row = document.createElement('tr');
+    
+                    for (let j = 0; j < elements.length; j++) {
+                        let element = elements[j];
+                        let cell = document.createElement('td');
+                        cell.className = 'boardCell';
+                        if (typeof element !== 'string') cell.id = element.id;
+    
+                        if (i === 0) {
+                            cell.style.height = '40px';
+                            cell.textContent = element;
+                        } else {
+                            cell.style.height = '100px';
+                            cell.textContent = `$${element.value}`;
+                            cell.addEventListener('click', handleCellClick);
+                        }
+
+                        if (selectedCells.has(element.id)) {
+                            cell.removeEventListener('click', handleCellClick); 
+                            cell.className += ' disabled';
+                        }
+    
+                        row.appendChild(cell);
+                    }
+
+                    jeopardyBoard.appendChild(row);
                 }
-                jeopardyBoard.appendChild(row);
+            } else {
+                for (let i = 0; i < 2; i++) {
+                    let elements = retrieveBoardElements(i, board.Final, -1);
+                    let row = document.createElement('tr');
+
+                    for (let j = 0; j < elements.length; j++) {
+                        let element = elements[j];
+                        let cell = document.createElement('td');
+                        cell.className = 'boardCell';
+                        if (typeof element !== 'string') cell.id = element.id;
+    
+                        if (i === 0) {
+                            cell.style.height = '40px';
+                            cell.textContent = element;
+                        } else {
+                            cell.style.height = '100px';
+                            cell.textContent = 'Wager Value';
+                            cell.addEventListener('click', handleCellClick);
+                        }
+
+                        if (selectedCells.has(element.id)) {
+                            cell.removeEventListener('click', handleCellClick); 
+                            cell.className += ' disabled';
+                        }
+    
+                        row.appendChild(cell);
+                    }
+
+                    jeopardyBoard.appendChild(row);
+                }
             }
+
             boardContainer.appendChild(jeopardyBoard);
+        }
+
+        function retrieveBoardElements(i, arr, value) {
+            let elements = [];
+            if (i == 0) {
+                for (let k = 0; k < arr.length; k++) {
+                    elements.push(arr[k].category);
+                }
+            } else {
+                for (let k = 0; k < arr.length; k++) {
+                    let category = arr[k];
+                    for (let l = 0; l < category.clues.length; l++) {
+                        if (value == -1 || category.clues[l].value == value) {
+                            elements.push(category.clues[l]);
+                        }
+                    }
+                }
+            } 
+
+            return elements;
+        }
+
+        function getQuestionText(arr, id) {
+            let text = 'N/A';
+            for (let i = 0; i < arr.length; i++) {
+                let category = arr[i];
+                for (let j = 0; j < category.clues.length; j++) {
+                    if (category.clues[j].id == id) {
+                        text = category.clues[j].clue;
+                        break;
+                    }
+                }
+            }
+
+            return text;
         }
 
         function setWager(wager, gameState){
