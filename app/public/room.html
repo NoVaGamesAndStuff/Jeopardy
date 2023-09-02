@@ -173,14 +173,15 @@
             }
         });
 
-        socket.on('questionSelected', (entity) => {
-            if (entity == 'host') {
-                document.getElementById('questionContainer').style.display = 'block';
-            } else if (entity == 'player') {
+        socket.on('questionSelected', (questionInfo) => {
+            document.getElementById('waitingForQuestionSelect').style.display = 'none';
+            let questionContainer = document.getElementById('questionContainer');
+            questionContainer.style.display = 'block';
+            questionContainer.textContent = 'Clue: ' + questionInfo.clue;
 
-            } else {
-                console.log('Unrecognized entity.');
-            }
+            let answerContainer = document.getElementById('answerContainer');
+            answerContainer.style.display = 'block';
+            answerContainer.textContent = 'Answer: ' + questionInfo.answer;
         });
 
         function displayZoomedCell(questionText) {
@@ -193,6 +194,7 @@
 
             zoomedCell.addEventListener('click', function () {
                 boardContainer.innerHTML = '';
+                revertHostView(); // TESTING
                 displayBoard(board, doubleJeopardy, finalJeopardy);
             });
         }
@@ -230,7 +232,7 @@
                 }
 
                 displayZoomedCell(questionText);
-                socket.emit('selectQuestion', roomKey);
+                socket.emit('selectQuestion', { roomKey, questionID });
             }
         }
 
@@ -404,6 +406,14 @@
             }
             return board;
         } 
+
+        function revertHostView() {
+            document.getElementById('waitingForQuestionSelect').style.display = 'block';
+            document.getElementById('questionContainer').style.display = 'none';
+            document.getElementById('questionContainer').style.display = 'none';
+            document.getElementById('answerContainer').textContent = '';
+            document.getElementById('answerContainer').textContent = '';
+        }
     </script>
 </body>
 </html>

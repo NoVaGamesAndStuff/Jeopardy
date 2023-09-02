@@ -5,10 +5,25 @@ const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
-const port = 3000;
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
 const hostname = 'localhost';
 app.use(express.static('public'));
 app.use(express.json());
+
+function normalizePort(val) {
+    var port = parseInt(val, 10);
+
+    if (isNaN(port)) {
+        return val;
+    }
+
+    if (port >= 0) {
+        return port;
+    }
+
+    return false;
+}
 
 var serverData = {
     rooms: []
@@ -594,10 +609,18 @@ io.on('connection', (socket) => {
         io.to(room.pc.id).emit('gameStartView', { entityName, obj });
     });
 
-    socket.on('selectQuestion', (roomKey) => {
+    socket.on('selectQuestion', ({ roomKey, questionID }) => {
         const room = serverData.rooms.find(room => room.key === roomKey);
-        io.to(room.host.id).emit('questionSelected', 'host');
-        io.to(room.pc.id).emit('questionSelected', 'pc');
+        let questionInfo = null;
+        if (questionID.charAt(0) == 's') {
+            questionInfo = getQuestionInfo(room.board.Single, questionID);
+        } else if (questionID.charAt(0) == 'd') {
+            questionInfo = getQuestionInfo(room.board.Double, questionID);
+        } else if (questionID.charAt(0) == 'f') {
+            questionInfo = getQuestionInfo(room.board.Final, questionID);
+        }
+        
+        io.to(room.host.id).emit('questionSelected', questionInfo);
     });
 
     socket.on('disconnect', () => {
@@ -664,6 +687,21 @@ function generateRandomKey(length) {
         result += characters.charAt(Math.floor(Math.random() * characters.length));
     }
     return result;
+}
+
+function getQuestionInfo(arr, id) {
+    let q = null;
+    for (let i = 0; i < arr.length; i++) {
+        let category = arr[i];
+        for (let j = 0; j < category.clues.length; j++) {
+            if (category.clues[j].id == id) {
+                q = category.clues[j];
+                break;
+            }
+        }
+    }
+
+    return q;
 }
 
 server.listen(port, hostname, () => {

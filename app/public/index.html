@@ -19,7 +19,7 @@
         function createRoom() {
             let displayName = document.getElementById('display_name').value;
 
-            fetch('http://localhost:3000/createRoom', {
+            fetch('createRoom', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -29,7 +29,7 @@
             .then(response => response.json())
             .then(data => {
                 let roomKey = data.newRoom.key;
-                window.location.href = `http://localhost:3000/room/${roomKey}`;
+                window.location.href = `room/${roomKey}`;
             })
             .catch(error => {
                 console.error('Error creating room:', error);
@@ -45,7 +45,7 @@
                 return;
             }
 
-            fetch('http://localhost:3000/joinRoom', {
+            fetch('joinRoom', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -54,7 +54,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                window.location.href = `http://localhost:3000/room/${roomKey}`;
+                window.location.href = `room/${roomKey}`;
             })
             .catch(error => {
                 console.error('Error joining room:', error);
@@ -68,7 +68,7 @@
                 return;
             }
 
-            fetch('http://localhost:3000/joinRoomPC', {
+            fetch('joinRoomPC', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -77,7 +77,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                window.location.href = `http://localhost:3000/room/${roomKey}`;
+                window.location.href = `room/${roomKey}`;
             })
             .catch(error => {
                 console.error('Error joining room:', error);
