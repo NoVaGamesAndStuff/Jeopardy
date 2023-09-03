@@ -70,14 +70,13 @@
     <div id="hostViewContainer" style="display: none;">
         <div id="waitingForQuestionSelect" style="display: block;">Waiting for the player to select a question...</div>
         <div id="questionContainer" style="display: none;"></div>
-        <div id="answerContainer" style="display: none;"></div>
-		<div id="wrongAndSkipButtons" style="display: none;">
-            <button id="wrongButton" style="display: block;" onclick="wrongQuestion()">Wrong Answer</button>
-            <button id="skipButton" style="display: block;" onclick="skipQuestion()">Skip Question</button>
+        <div id="answerContainer" style="display: none;"></div><br><br>
+        <div id="buzzedPlayerInfo" style="display: none;"></div><br><br>
+        <button id="unlockQuestion" onclick="unlockQuestion()" style="display: none;">Unlock Question</button>
+		<div id="answerButtons" style="display: none;">
+            <button id="rightButton" onclick="rightAnswer()">Right Answer</button>
+            <button id="wrongButton" onclick="wrongAnswer()">Wrong Answer</button>
         </div>
-		
-        <div id="buzzedPlayerInfo" style="display: none;"></div>
-        <br><br><button id="unlockQuestion" onclick="unlockQuestion()" style="display: none;">Unlock Question</button>
     </div>
 
     <!-- Container for all player behavior: buzzer, displaying score, etc. -->
@@ -195,9 +194,6 @@
             let answerContainer = document.getElementById('answerContainer');
             answerContainer.style.display = 'block';
             answerContainer.textContent = 'Answer: ' + questionInfo.answer;
-			
-			let wrongAndSkipButtons = document.getElementById('wrongAndSkipButtons');
-            wrongAndSkipButtons.style.display = 'block';
 
             document.getElementById('unlockQuestion').style.display = 'block';
         });
@@ -213,7 +209,8 @@
             zoomedCell.addEventListener('click', function () {
                 boardContainer.innerHTML = '';
                 displayBoard(board, doubleJeopardy, finalJeopardy);
-                revertHostView(); // TESTING
+                socket.emit('lockQuestion', roomKey);
+                socket.emit('resetHostView', roomKey);
             });
         }
 
@@ -425,28 +422,60 @@
             return board;
         } 
 
+        socket.on('revertHostView', () => {
+            console.log('Resetting host view...');
+            const waitingForQuestionSelect = document.getElementById('waitingForQuestionSelect');
+            waitingForQuestionSelect.style.display = 'block';
+
+            const questionContainer = document.getElementById('questionContainer');
+            questionContainer.style.display = 'none';
+            questionContainer.style.display = 'none';
+
+            const answerContainer = document.getElementById('answerContainer');
+            answerContainer.textContent = '';
+            answerContainer.textContent = '';
+
+            const unlockQuestion = document.getElementById('unlockQuestion');
+            unlockQuestion.style.display = 'none';
+
+            const answerButtons = document.getElementById('answerButtons');
+            answerButtons.style.display = 'none';
+        });
+
         function revertHostView() {
             console.log('Resetting host view...');
-            document.getElementById('waitingForQuestionSelect').style.display = 'block';
-            document.getElementById('questionContainer').style.display = 'none';
-            document.getElementById('questionContainer').style.display = 'none';
-            document.getElementById('answerContainer').textContent = '';
-            document.getElementById('answerContainer').textContent = '';
-            document.getElementById('unlockQuestion').style.display = 'none';
+            const waitingForQuestionSelect = document.getElementById('waitingForQuestionSelect');
+            waitingForQuestionSelect.style.display = 'block';
+
+            const questionContainer = document.getElementById('questionContainer');
+            questionContainer.style.display = 'none';
+            questionContainer.style.display = 'none';
+
+            const answerContainer = document.getElementById('answerContainer');
+            answerContainer.textContent = '';
+            answerContainer.textContent = '';
+
+            const unlockQuestion = document.getElementById('unlockQuestion');
+            unlockQuestion.style.display = 'none';
+
+            const answerButtons = document.getElementById('answerButtons');
+            answerButtons.style.display = 'none';
         }
 
         function unlockQuestion() {
             const unlockQuestion = document.getElementById('unlockQuestion');
             unlockQuestion.style.display = 'none';
+
             const buzzedPlayerInfo = document.getElementById('buzzedPlayerInfo');
             buzzedPlayerInfo.style.display = 'none';
             buzzedPlayerInfo.textContent = '';
+
             socket.emit('unlockQuestion', roomKey);
         }
 
         function buzz() {
-            console.log('This player buzzed! Socket ID: ' + socketId);
-            socket.emit('lockQuestion', { roomKey, socketId });
+            socket.emit('lockQuestion', roomKey);
+            socket.emit('playerBuzz', { roomKey, socketId });
         }
 
         socket.on('enableBuzzer', (playerName) => {
@@ -459,12 +488,16 @@
             buzzer.disabled = true;
         });
 
-        socket.on('getBuzzedPlayerInfo', (currentPlayer) => {
+        socket.on('buzzedPlayer', (currentPlayer) => {
             const unlockQuestion = document.getElementById('unlockQuestion');
             unlockQuestion.style.display = 'block';
+
             const buzzedPlayerInfo = document.getElementById('buzzedPlayerInfo');
             buzzedPlayerInfo.textContent = currentPlayer.name + ' is answering the question.';
             buzzedPlayerInfo.style.display = 'block';
+
+            const answerButtons = document.getElementById('answerButtons');
+            answerButtons.style.display = 'block';
         });
     </script>
 </body>

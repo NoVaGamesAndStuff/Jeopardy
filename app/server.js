@@ -632,7 +632,16 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('lockQuestion', ({ roomKey, socketId }) => {
+    socket.on('lockQuestion', (roomKey) => {
+        const room = serverData.rooms.find(room => room.key === roomKey);
+        for (var i = 0; i < room.players.length; i++) {
+            var currentPlayer = room.players[i];
+            var playerName = currentPlayer.name;
+            io.to(currentPlayer.id).emit('disableBuzzer', playerName);
+        }
+    });
+
+    socket.on('playerBuzz', ({ roomKey, socketId }) => {
         const room = serverData.rooms.find(room => room.key === roomKey);
         var buzzedPlayer;
         for (var i = 0; i < room.players.length; i++) {
@@ -640,13 +649,16 @@ io.on('connection', (socket) => {
 
             if (currentPlayer.id == socketId) {
                 buzzedPlayer = currentPlayer;
-            } 
-
-            var playerName = currentPlayer.name;
-            io.to(currentPlayer.id).emit('disableBuzzer', playerName);
+                break;
+            }
         }
 
-        io.to(room.host.id).emit('getBuzzedPlayerInfo', buzzedPlayer);
+        io.to(room.host.id).emit('buzzedPlayer', buzzedPlayer);
+    });
+
+    socket.on('resetHostView', (roomKey) => {
+        const room = serverData.rooms.find(room => room.key === roomKey);
+        socket.to(room.host.id).emit('revertHostView');
     });
 
     socket.on('disconnect', () => {
