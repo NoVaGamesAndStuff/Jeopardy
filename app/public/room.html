@@ -78,11 +78,6 @@
 		
         <div id="buzzedPlayerInfo" style="display: none;"></div>
         <br><br><button id="unlockQuestion" onclick="unlockQuestion()" style="display: none;">Unlock Question</button>
-        <div id="wrongAndSkipButtons" style="display: none;">
-            <button id="wrongButton" style="display: block;" onclick="wrongQuestion()">Wrong Answer</button>
-            <button id="skipButton" style="display: block;" onclick="skipQuestion()">Skip Question</button>
-        </div>
-        
     </div>
 
     <!-- Container for all player behavior: buzzer, displaying score, etc. -->
@@ -200,9 +195,11 @@
             let answerContainer = document.getElementById('answerContainer');
             answerContainer.style.display = 'block';
             answerContainer.textContent = 'Answer: ' + questionInfo.answer;
-
-            let wrongAndSkipButtons = document.getElementById('wrongAndSkipButtons');
+			
+			let wrongAndSkipButtons = document.getElementById('wrongAndSkipButtons');
             wrongAndSkipButtons.style.display = 'block';
+
+            document.getElementById('unlockQuestion').style.display = 'block';
         });
 
         function displayZoomedCell(questionText) {
