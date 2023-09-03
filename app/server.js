@@ -94,7 +94,7 @@ const sampleBoard = {
                 },
                 {
                     clue: "A past tense chomp, or a unit of information",
-                    answer: "A bit",
+                    answer: "A Bit",
                     value: 600,
                     dailydouble: false,
                     id: 's8'
@@ -243,7 +243,7 @@ const sampleBoard = {
             clues: 
             [
                 {
-                    clue: "Duane who performs on stage in front of thousands",
+                    clue: "Dwayne who performs on stage in front of thousands",
                     answer: "The Rock Star",
                     value: 200,
                     dailydouble: false,
@@ -343,7 +343,7 @@ const sampleBoard = {
                 },
                 {
                     clue: "A past tense chomp, or a unit of information",
-                    answer: "A bit",
+                    answer: "A Bit",
                     value: 1200,
                     dailydouble: false,
                     id: 'd8'
@@ -492,7 +492,7 @@ const sampleBoard = {
             clues: 
             [
                 {
-                    clue: "Duane who performs on stage in front of thousands",
+                    clue: "Dwayne who performs on stage in front of thousands",
                     answer: "The Rock Star",
                     value: 400,
                     dailydouble: false,
