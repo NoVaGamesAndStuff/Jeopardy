@@ -94,7 +94,7 @@ const sampleBoard = {
                 },
                 {
                     clue: "A past tense chomp, or a unit of information",
-                    answer: "A bit",
+                    answer: "A Bit",
                     value: 600,
                     dailydouble: false,
                     id: 's8'
@@ -243,7 +243,7 @@ const sampleBoard = {
             clues: 
             [
                 {
-                    clue: "Duane who performs on stage in front of thousands",
+                    clue: "Dwayne who performs on stage in front of thousands",
                     answer: "The Rock Star",
                     value: 200,
                     dailydouble: false,
@@ -343,7 +343,7 @@ const sampleBoard = {
                 },
                 {
                     clue: "A past tense chomp, or a unit of information",
-                    answer: "A bit",
+                    answer: "A Bit",
                     value: 1200,
                     dailydouble: false,
                     id: 'd8'
@@ -492,7 +492,7 @@ const sampleBoard = {
             clues: 
             [
                 {
-                    clue: "Duane who performs on stage in front of thousands",
+                    clue: "Dwayne who performs on stage in front of thousands",
                     answer: "The Rock Star",
                     value: 400,
                     dailydouble: false,
@@ -621,6 +621,32 @@ io.on('connection', (socket) => {
         }
         
         io.to(room.host.id).emit('questionSelected', questionInfo);
+    });
+
+    socket.on('unlockQuestion', (roomKey) => {
+        const room = serverData.rooms.find(room => room.key === roomKey);
+        for (var i = 0; i < room.players.length; i++) {
+            var currentPlayer = room.players[i];
+            var playerName = currentPlayer.name;
+            io.to(currentPlayer.id).emit('enableBuzzer', playerName);
+        }
+    });
+
+    socket.on('lockQuestion', ({ roomKey, socketId }) => {
+        const room = serverData.rooms.find(room => room.key === roomKey);
+        var buzzedPlayer;
+        for (var i = 0; i < room.players.length; i++) {
+            var currentPlayer = room.players[i];
+
+            if (currentPlayer.id == socketId) {
+                buzzedPlayer = currentPlayer;
+            } 
+
+            var playerName = currentPlayer.name;
+            io.to(currentPlayer.id).emit('disableBuzzer', playerName);
+        }
+
+        io.to(room.host.id).emit('getBuzzedPlayerInfo', buzzedPlayer);
     });
 
     socket.on('disconnect', () => {

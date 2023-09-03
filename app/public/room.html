@@ -71,15 +71,22 @@
         <div id="waitingForQuestionSelect" style="display: block;">Waiting for the player to select a question...</div>
         <div id="questionContainer" style="display: none;"></div>
         <div id="answerContainer" style="display: none;"></div>
+		<div id="wrongAndSkipButtons" style="display: none;">
+            <button id="wrongButton" style="display: block;" onclick="wrongQuestion()">Wrong Answer</button>
+            <button id="skipButton" style="display: block;" onclick="skipQuestion()">Skip Question</button>
+        </div>
+		
+        <div id="buzzedPlayerInfo" style="display: none;"></div>
+        <br><br><button id="unlockQuestion" onclick="unlockQuestion()" style="display: none;">Unlock Question</button>
     </div>
 
     <!-- Container for all player behavior: buzzer, displaying score, etc. -->
     <div id="playerViewContainer" style="display: none;">
-        <button id="buzzer" disabled="true">
+        <div id="playerNameContainer" style="font-weight: bold;"></div><br><br>
+        <button id="buzzer" onclick="buzz()" disabled>
             <img src="/assets/buzzer_enabled.jpg" alt="enabled buzzer">
         </button>
     </div>
-
     <!-- <div id="wagerContainer" style="display: block;"> -->
         <!-- <button id="setWagerButton"onclick="setWager()">Set Wager</button> -->
         <!-- <input id="wager_input" name="wager_input" type="text" /> -->
@@ -92,7 +99,13 @@
     <script>
         const socket = io();
         const roomKey = window.location.pathname.split('/').pop();
-        const socketId = socket.id;
+
+        var socketId;
+        socket.on('connect', () => {
+            console.log('Socket connection was made with ID: ' + socket.id);
+            socketId = socket.id;
+        });
+
         let wagerValue = 0;
         let board = null;
         let currDispName = localStorage.getItem('currentDisplayName');
@@ -156,8 +169,6 @@
         }
 
         socket.on('gameStartView', ({ entityName, obj }) => {
-            console.log('Setting game view for ' + entityName);
-
             if (entityName == 'host') {
                 initialViewContainer.style.display = 'none';
                 hostViewContainer.style.display = 'block';
@@ -168,6 +179,8 @@
             } else if (entityName == 'player') {
                 initialViewContainer.style.display = 'none';
                 playerViewContainer.style.display = 'block';
+                const playerNameContainer = document.getElementById('playerNameContainer');
+                playerNameContainer.textContent = currDispName;
             } else {
                 console.log('Unrecognized entity.');
             }
@@ -182,6 +195,11 @@
             let answerContainer = document.getElementById('answerContainer');
             answerContainer.style.display = 'block';
             answerContainer.textContent = 'Answer: ' + questionInfo.answer;
+			
+			let wrongAndSkipButtons = document.getElementById('wrongAndSkipButtons');
+            wrongAndSkipButtons.style.display = 'block';
+
+            document.getElementById('unlockQuestion').style.display = 'block';
         });
 
         function displayZoomedCell(questionText) {
@@ -194,8 +212,8 @@
 
             zoomedCell.addEventListener('click', function () {
                 boardContainer.innerHTML = '';
-                revertHostView(); // TESTING
                 displayBoard(board, doubleJeopardy, finalJeopardy);
+                revertHostView(); // TESTING
             });
         }
 
@@ -408,12 +426,46 @@
         } 
 
         function revertHostView() {
+            console.log('Resetting host view...');
             document.getElementById('waitingForQuestionSelect').style.display = 'block';
             document.getElementById('questionContainer').style.display = 'none';
             document.getElementById('questionContainer').style.display = 'none';
             document.getElementById('answerContainer').textContent = '';
             document.getElementById('answerContainer').textContent = '';
+            document.getElementById('unlockQuestion').style.display = 'none';
         }
+
+        function unlockQuestion() {
+            const unlockQuestion = document.getElementById('unlockQuestion');
+            unlockQuestion.style.display = 'none';
+            const buzzedPlayerInfo = document.getElementById('buzzedPlayerInfo');
+            buzzedPlayerInfo.style.display = 'none';
+            buzzedPlayerInfo.textContent = '';
+            socket.emit('unlockQuestion', roomKey);
+        }
+
+        function buzz() {
+            console.log('This player buzzed! Socket ID: ' + socketId);
+            socket.emit('lockQuestion', { roomKey, socketId });
+        }
+
+        socket.on('enableBuzzer', (playerName) => {
+            const buzzer = document.getElementById('buzzer');
+            buzzer.disabled = false;
+        });
+
+        socket.on('disableBuzzer', (playerName) => {
+            const buzzer = document.getElementById('buzzer');
+            buzzer.disabled = true;
+        });
+
+        socket.on('getBuzzedPlayerInfo', (currentPlayer) => {
+            const unlockQuestion = document.getElementById('unlockQuestion');
+            unlockQuestion.style.display = 'block';
+            const buzzedPlayerInfo = document.getElementById('buzzedPlayerInfo');
+            buzzedPlayerInfo.textContent = currentPlayer.name + ' is answering the question.';
+            buzzedPlayerInfo.style.display = 'block';
+        });
     </script>
 </body>
 </html>
