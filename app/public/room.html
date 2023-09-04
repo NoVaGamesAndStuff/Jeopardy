@@ -455,8 +455,19 @@
             buzzedPlayerInfo.style.display = 'none';
             buzzedPlayerInfo.textContent = '';
 
+            const answerButtons = document.getElementById('answerButtons');
+            answerButtons.style.display = 'none';
+
             socket.emit('unlockQuestion', roomKey);
         }
+
+        socket.on('reUnlockQuestion', (room) => {
+            if (room.players.length == room.metadata.buzzedPlayers.length) {
+                socket.emit('endOfBuzzingAvailability', roomKey);
+            } else {
+                unlockQuestion();
+            }
+        });
 
         function buzz() {
             socket.emit('lockQuestion', roomKey);
@@ -488,8 +499,10 @@
         function rightAnswer() {
             socket.emit('rightAnswer', roomKey);
             socket.emit('lockQuestion', roomKey);
-            // socket.emit('resetHostView', roomKey);
-            // socket.emit('resetPCView', roomKey);
+        }
+
+        function wrongAnswer() {
+            socket.emit('wrongAnswer', roomKey);
         }
 
         socket.on('revertPCView', () => {
@@ -498,7 +511,6 @@
         });
 
         socket.on('updateTable', (room) => {
-            console.log('updating table...');
             updatePlayerTable(room.players);
         });
     </script>

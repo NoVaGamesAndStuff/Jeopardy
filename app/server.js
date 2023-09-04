@@ -638,7 +638,7 @@ io.on('connection', (socket) => {
         for (var i = 0; i < room.players.length; i++) {
             var currentPlayer = room.players[i];
             var playerName = currentPlayer.name;
-            if (room.metadata.buzzedPlayers.includes(currentPlayer.id) == false ) io.to(currentPlayer.id).emit('enableBuzzer', playerName);
+            if (room.metadata.buzzedPlayers.includes(currentPlayer.id) == false) io.to(currentPlayer.id).emit('enableBuzzer', playerName);
         }
     });
 
@@ -683,27 +683,49 @@ io.on('connection', (socket) => {
     socket.on('rightAnswer', (roomKey) => {
         const room = serverData.rooms.find(room => room.key === roomKey);
 
-        console.log('updating score...');
         for (let i = 0; i < room.players.length; i++) {
             var player = room.players[i];
             if (player.id == room.metadata.currentlyBuzzedPlayer) {
-                console.log('updating the score for ' + player.name + ' by ' + room.metadata.currentQuestion.value);
                 player.score += room.metadata.currentQuestion.value;
                 break;
             }
         }
 
-        console.log('updating values...');
         room.metadata.currentPlayer = room.metadata.currentlyBuzzedPlayer;
         room.metadata.currentlyBuzzedPlayer = null;
         room.metadata.buzzedPlayers = []; 
-        console.log('current player should be ' + room.metadata.currentPlayer);
 
         io.to(room.pc.id).emit('updateTable', room);
 
         var currentPlayerName = getPlayer(room.players, room.metadata.currentPlayer).name;
         io.to(room.host.id).emit('revertHostView', currentPlayerName);
 
+        io.to(room.pc.id).emit('revertPCView');
+    });
+
+    socket.on('wrongAnswer', (roomKey) => {
+        const room = serverData.rooms.find(room => room.key === roomKey);
+
+        for (let i = 0; i < room.players.length; i++) {
+            var player = room.players[i];
+            if (player.id == room.metadata.currentlyBuzzedPlayer) {
+                player.score -= room.metadata.currentQuestion.value;
+                break;
+            }
+        }
+
+        io.to(room.pc.id).emit('updateTable', room);
+        io.to(room.host.id).emit('reUnlockQuestion', room);
+    });
+
+    socket.on('endOfBuzzingAvailability', (roomKey) => {
+        const room = serverData.rooms.find(room => room.key === roomKey);
+
+        var currentPlayerName = getPlayer(room.players, room.metadata.currentPlayer).name;
+        room.metadata.currentlyBuzzedPlayer = null;
+        room.metadata.buzzedPlayers = []; 
+
+        io.to(room.host.id).emit('revertHostView', currentPlayerName);
         io.to(room.pc.id).emit('revertPCView');
     });
 
