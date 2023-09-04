@@ -592,7 +592,10 @@ io.on('connection', (socket) => {
     });
 
     socket.on('startGame', (roomKey) => {
+        console.log('Starting the game...');
         const room = serverData.rooms.find(room => room.key === roomKey);
+        room.metadata.currentPlayer = room.players[0].id;
+
         let obj = {}; // emptyObj exists to pass an empty object to host and player emits since they still need a second parameter
 
         let entityName = 'host';
@@ -607,6 +610,12 @@ io.on('connection', (socket) => {
         entityName = 'pc';
         obj = room.board;
         io.to(room.pc.id).emit('gameStartView', { entityName, obj });
+    });
+
+    socket.on('setInitialHostView', (roomKey) => {
+        const room = serverData.rooms.find(room => room.key === roomKey);
+        var currentPlayerName = getPlayer(room.players, room.metadata.currentPlayer).name;
+        io.to(room.host.id).emit('initialHostView', currentPlayerName);
     });
 
     socket.on('selectQuestion', ({ roomKey, questionID }) => {
@@ -628,7 +637,7 @@ io.on('connection', (socket) => {
         for (var i = 0; i < room.players.length; i++) {
             var currentPlayer = room.players[i];
             var playerName = currentPlayer.name;
-            io.to(currentPlayer.id).emit('enableBuzzer', playerName);
+            if (room.metadata.buzzedPlayers.includes(currentPlayer.id) == false ) io.to(currentPlayer.id).emit('enableBuzzer', playerName);
         }
     });
 
@@ -643,6 +652,9 @@ io.on('connection', (socket) => {
 
     socket.on('playerBuzz', ({ roomKey, socketId }) => {
         const room = serverData.rooms.find(room => room.key === roomKey);
+        room.metadata.currentlyBuzzedPlayer = socketId;
+        room.metadata.buzzedPlayers.push(socketId);
+
         var buzzedPlayer;
         for (var i = 0; i < room.players.length; i++) {
             var currentPlayer = room.players[i];
@@ -673,9 +685,6 @@ app.post('/joinRoom', (req, res) => {
     if (room) {
         let player = { name: displayName, score: 0, id: null };
         room.players.push(player);
-        if (room.metadata.currentPlayer == null) {
-            room.metadata.currentPlayer = player;
-        }
         res.status(200).json({ room });
     } else {
         res.status(404).json({ error: 'Room not found' });
@@ -740,6 +749,18 @@ function getQuestionInfo(arr, id) {
     }
 
     return q;
+}
+
+function getPlayer(arr, id) {
+    var player;
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i].id == id) {
+            player = arr[i];
+            break;
+        }
+    }
+
+    return player;
 }
 
 server.listen(port, hostname, () => {

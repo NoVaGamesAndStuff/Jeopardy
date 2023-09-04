@@ -68,7 +68,7 @@
 
     <!-- Container for all Host behavior: displaying question info, unlocking questions, correct/incorrect answers, etc. -->
     <div id="hostViewContainer" style="display: none;">
-        <div id="waitingForQuestionSelect" style="display: block;">Waiting for the player to select a question...</div>
+        <div id="waitingForQuestionSelect" style="display: block;"></div>
         <div id="questionContainer" style="display: none;"></div>
         <div id="answerContainer" style="display: none;"></div><br><br>
         <div id="buzzedPlayerInfo" style="display: none;"></div><br><br>
@@ -108,6 +108,7 @@
         let wagerValue = 0;
         let board = null;
         let currDispName = localStorage.getItem('currentDisplayName');
+        let currQuestionId = null;
 
         let initialViewContainer = document.getElementById('initialViewContainer');
         let boardContainer = document.getElementById('boardContainer');
@@ -163,8 +164,8 @@
         }
 
         function startGame() {
-            console.log('Starting the game...');
             socket.emit('startGame', roomKey);
+            socket.emit('setInitialHostView', roomKey);
         }
 
         socket.on('gameStartView', ({ entityName, obj }) => {
@@ -183,6 +184,11 @@
             } else {
                 console.log('Unrecognized entity.');
             }
+        });
+
+        socket.on('initialHostView', (currentPlayerName) => {
+            const waitingForQuestionSelect = document.getElementById('waitingForQuestionSelect');
+            waitingForQuestionSelect.textContent = 'Waiting for "' + currentPlayerName + '" to select a question...';
         });
 
         socket.on('questionSelected', (questionInfo) => {
@@ -215,12 +221,10 @@
         }
 
         function handleCellClick(event) {
-            console.log("Cell clicked!");
             
             const clickedCell = event.target;
 
             if (!selectedCells.has(clickedCell.id)) { 
-                console.log("Unclicked cell clicked!");
                 const questionID = clickedCell.id;
                 selectedCells.add(questionID); 
 
@@ -499,6 +503,10 @@
             const answerButtons = document.getElementById('answerButtons');
             answerButtons.style.display = 'block';
         });
+
+        // function rightAnswer() {
+
+        // }
     </script>
 </body>
 </html>
