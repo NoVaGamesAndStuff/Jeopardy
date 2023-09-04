@@ -125,7 +125,6 @@
         socket.emit('getRoom', { roomKey, currDispName });
 
         socket.on('getRoomInfo', ({ room, isHost }) => {
-            console.log('Got room info:', room);
             updatePlayerTable(room.players);
 
             if (room.host) {
@@ -146,7 +145,6 @@
         });
 
         function updatePlayerTable(players) {
-            console.log('Received updated player data:', players);
             const playerTable = document.getElementById('playerTable');
 
             while (playerTable.rows.length > 1) {
@@ -220,8 +218,7 @@
             });
         }
 
-        function handleCellClick(event) {
-            
+        function handleCellClick(event) {           
             const clickedCell = event.target;
 
             if (!selectedCells.has(clickedCell.id)) { 
@@ -426,9 +423,10 @@
             return board;
         } 
 
-        socket.on('revertHostView', () => {
+        socket.on('revertHostView', (currentPlayerName) => {
             console.log('Resetting host view...');
             const waitingForQuestionSelect = document.getElementById('waitingForQuestionSelect');
+            waitingForQuestionSelect.textContent = 'Waiting for "' + currentPlayerName + '" to select a question...';
             waitingForQuestionSelect.style.display = 'block';
 
             const questionContainer = document.getElementById('questionContainer');
@@ -438,6 +436,9 @@
             const answerContainer = document.getElementById('answerContainer');
             answerContainer.textContent = '';
             answerContainer.textContent = '';
+
+            const buzzedPlayerInfo = document.getElementById('buzzedPlayerInfo');
+            buzzedPlayerInfo.style.display = 'none';
 
             const unlockQuestion = document.getElementById('unlockQuestion');
             unlockQuestion.style.display = 'none';
@@ -445,26 +446,6 @@
             const answerButtons = document.getElementById('answerButtons');
             answerButtons.style.display = 'none';
         });
-
-        function revertHostView() {
-            console.log('Resetting host view...');
-            const waitingForQuestionSelect = document.getElementById('waitingForQuestionSelect');
-            waitingForQuestionSelect.style.display = 'block';
-
-            const questionContainer = document.getElementById('questionContainer');
-            questionContainer.style.display = 'none';
-            questionContainer.style.display = 'none';
-
-            const answerContainer = document.getElementById('answerContainer');
-            answerContainer.textContent = '';
-            answerContainer.textContent = '';
-
-            const unlockQuestion = document.getElementById('unlockQuestion');
-            unlockQuestion.style.display = 'none';
-
-            const answerButtons = document.getElementById('answerButtons');
-            answerButtons.style.display = 'none';
-        }
 
         function unlockQuestion() {
             const unlockQuestion = document.getElementById('unlockQuestion');
@@ -504,9 +485,22 @@
             answerButtons.style.display = 'block';
         });
 
-        // function rightAnswer() {
+        function rightAnswer() {
+            socket.emit('rightAnswer', roomKey);
+            socket.emit('lockQuestion', roomKey);
+            // socket.emit('resetHostView', roomKey);
+            // socket.emit('resetPCView', roomKey);
+        }
 
-        // }
+        socket.on('revertPCView', () => {
+            boardContainer.innerHTML = '';
+            displayBoard(board, doubleJeopardy, finalJeopardy);
+        });
+
+        socket.on('updateTable', (room) => {
+            console.log('updating table...');
+            updatePlayerTable(room.players);
+        });
     </script>
 </body>
 </html>

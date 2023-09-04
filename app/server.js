@@ -629,6 +629,7 @@ io.on('connection', (socket) => {
             questionInfo = getQuestionInfo(room.board.Final, questionID);
         }
         
+        room.metadata.currentQuestion = questionInfo;
         io.to(room.host.id).emit('questionSelected', questionInfo);
     });
 
@@ -670,7 +671,40 @@ io.on('connection', (socket) => {
 
     socket.on('resetHostView', (roomKey) => {
         const room = serverData.rooms.find(room => room.key === roomKey);
-        socket.to(room.host.id).emit('revertHostView');
+        var currentPlayerName = getPlayer(room.players, room.metadata.currentPlayer).name;
+        io.to(room.host.id).emit('revertHostView', currentPlayerName);
+    });
+
+    socket.on('resetPCView', (roomKey) => {
+        const room = serverData.rooms.find(room => room.key === roomKey);
+        io.to(room.pc.id).emit('revertPCView');
+    });
+
+    socket.on('rightAnswer', (roomKey) => {
+        const room = serverData.rooms.find(room => room.key === roomKey);
+
+        console.log('updating score...');
+        for (let i = 0; i < room.players.length; i++) {
+            var player = room.players[i];
+            if (player.id == room.metadata.currentlyBuzzedPlayer) {
+                console.log('updating the score for ' + player.name + ' by ' + room.metadata.currentQuestion.value);
+                player.score += room.metadata.currentQuestion.value;
+                break;
+            }
+        }
+
+        console.log('updating values...');
+        room.metadata.currentPlayer = room.metadata.currentlyBuzzedPlayer;
+        room.metadata.currentlyBuzzedPlayer = null;
+        room.metadata.buzzedPlayers = []; 
+        console.log('current player should be ' + room.metadata.currentPlayer);
+
+        io.to(room.pc.id).emit('updateTable', room);
+
+        var currentPlayerName = getPlayer(room.players, room.metadata.currentPlayer).name;
+        io.to(room.host.id).emit('revertHostView', currentPlayerName);
+
+        io.to(room.pc.id).emit('revertPCView');
     });
 
     socket.on('disconnect', () => {
@@ -706,6 +740,7 @@ app.post('/createRoom', (req, res) => {
         metadata: {
             currentPlayer: null,
             currentlyBuzzedPlayer: null,
+            currentQuestion: null,
             buzzedPlayers: []
         }
     };
