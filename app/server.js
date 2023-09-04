@@ -34,7 +34,7 @@ const sampleBoard = {
     [
         
         {
-            category: "Anagrams",
+            category: "ANAGRAMS",
             clues:
             [
                 {
@@ -75,7 +75,7 @@ const sampleBoard = {
             ]
         },
         {
-            category: "Code Words",
+            category: "CODE WORDS",
             clues: 
             [
                 {
@@ -116,7 +116,7 @@ const sampleBoard = {
             ]
         },
         {
-            category: "'Web' Dev",
+            category: "'WEB' DEV",
             clues: 
             [
                 {
@@ -134,7 +134,7 @@ const sampleBoard = {
                     id: 's12'
                 },
                 {
-                    clue: "Having these types of feet aid in aquatic locomotion ",
+                    clue: "Having these types of feet aid in aquatic locomotion",
                     answer: "Webbed",
                     value: 600,
                     dailydouble: false,
@@ -157,7 +157,7 @@ const sampleBoard = {
             ]
         },
         {
-            category: "Magic Shows",
+            category: "MAGIC SHOWS",
             clues: 
             [
                 {
@@ -176,7 +176,7 @@ const sampleBoard = {
                 },
                 {
                     clue: "A family of magic-wielders can be found in a sandwich shop set on this real New York City street in Manhattan that stretches from Bank Street to Broadway",
-                    answer: "Wizards of Waverly Place",
+                    answer: "Wizards Of Waverly Place",
                     value: 600,
                     dailydouble: false,
                     id: 's18'
@@ -190,7 +190,7 @@ const sampleBoard = {
                 },
                 {
                     clue: "Vampires and demons stood no chance in this popular magic show which even had its own musical episode: Once More, with Feeling",
-                    answer: "Buffy the Vampire Slayer",
+                    answer: "Buffy The Vampire Slayer",
                     value: 1000,
                     dailydouble: false,
                     id: 's20'
@@ -198,7 +198,7 @@ const sampleBoard = {
             ]
         },
         {
-            category: "Finals Week",
+            category: "FINALS WEEK",
             clues: 
             [
                 {
@@ -239,7 +239,7 @@ const sampleBoard = {
             ]
         },
         {
-            category: "Before and After",
+            category: "BEFORE AND AFTER",
             clues: 
             [
                 {
@@ -272,7 +272,7 @@ const sampleBoard = {
                 },
                 {
                     clue: "A stereotypical Australian phrase and a newly reimagined movie couple",
-                    answer: "Throw another shrimp on the Barbie and Ken",
+                    answer: "Throw Another Shrimp On The Barbie And Ken",
                     value: 1000,
                     dailydouble: false,
                     id: 's30'
@@ -283,40 +283,40 @@ const sampleBoard = {
     Double: 
     [
         {
-            category: "Anagrams",
+            category: "BEATLES SONGS 'H'",
             clues:
             [
                 {
-                    clue: "An American symbol: BAGEL DEAL",
-                    answer: "BALD EAGLE",
+                    clue: "'Little darlin', it's been a long, cold, lonely winter. Little darlin', it feels like years since it's been here'",
+                    answer: "Here Comes The Sun",
                     value: 400,
                     dailydouble: false,
                     id: 'd1'
                 },
                 {
-                    clue: "An ancient reptile: AIR SOUND",
-                    answer: "DINOSAUR",
+                    clue: "`...don't make it bad. Take a sad song and make it better.`",
+                    answer: "Hey Jude",
                     value: 800,
                     dailydouble: false,
                     id: 'd2'
                 },
                 {
-                    clue: "Heavenly predator of the coral reef: FLAG SHINE",
-                    answer: "ANGELFISH",
+                    clue: "`When I was younger, so much younger than today, I never needed anybody's help in any way`",
+                    answer: "Help!",
                     value: 1200,
                     dailydouble: false,
                     id: 'd3'
                 },
                 {
-                    clue: "Classmate from overseas: SNUG TEACH EXTEND",
-                    answer: "EXCHANGE STUDENT",
+                    clue: "`You can talk to me` four times",
+                    answer: "Hey Bulldog",
                     value: 1600,
                     dailydouble: false,
                     id: 'd4'
                 },
                 {
-                    clue: "Adjective meaning morally wrong: LEACH UNIT",
-                    answer: "UNETHICAL",
+                    clue: "Each one believing that love never dies. Watching her eyes and hoping I'm always there",
+                    answer: "Here, There And Everywhere",
                     value: 2000,
                     dailydouble: false,
                     id: 'd5'
@@ -324,40 +324,40 @@ const sampleBoard = {
             ]
         },
         {
-            category: "Code Words",
+            category: "COMPUTER `S`CIENCE",
             clues: 
             [
                 {
-                    clue: "A very popular coding language that you might find in the zoo",
-                    answer: "Python",
+                    clue: "Traversing from webpage to webpage was granted this tubular title",
+                    answer: "Surfing The Web",
                     value: 400,
                     dailydouble: false,
                     id: 'd6'
                 },
                 {
-                    clue: "You may find one covered in leaves in the forest, or in your repository",
-                    answer: "A Branch",
+                    clue: "They may not be able to fly or shoot lasers out of their eyes, but this type of user does have elevated permissions",
+                    answer: "Super User",
                     value: 800,
                     dailydouble: false,
                     id: 'd7'
                 },
                 {
-                    clue: "A past tense chomp, or a unit of information",
-                    answer: "A Bit",
+                    clue: "Roger Federer is a very proficient `this` in Tennis, although there are no clients connecting to that kind",
+                    answer: "Server",
                     value: 1200,
                     dailydouble: false,
                     id: 'd8'
                 },
                 {
-                    clue: "Not to be confused with the underwater Manta, this data structure",
-                    answer: "An Array",
+                    clue: "James Bond may install this on your computer to secretly gain information",
+                    answer: "Spyware",
                     value: 1600,
                     dailydouble: false,
                     id: 'd9'
                 },
                 {
-                    clue: "Primogeniture is one method used to determine what objects belong to who, or you can simply derive.",
-                    answer: "Inheritance",
+                    clue: "This storage device uses flash memory, and boasts increased read/write speed over its alternative",
+                    answer: "Solid State Drive",
                     value: 2000,
                     dailydouble: false,
                     id: 'd10'
@@ -365,40 +365,40 @@ const sampleBoard = {
             ]
         },
         {
-            category: "'Web' Dev",
+            category: "10 LETTER WORDS",
             clues: 
             [
                 {
-                    clue: "Where a URL may take you",
-                    answer: "Website",
+                    clue: "To put at risk, or a fun way to describe the act of playing this game",
+                    answer: "Jeopardize",
                     value: 400,
                     dailydouble: false,
                     id: 'd11'
                 },
                 {
-                    clue: "The self-made home of an eight-legged creature",
-                    answer: "Spiderweb",
+                    clue: "Although you do still wear boxing gloves, this martial art uses the legs and feet as well as the arms",
+                    answer: "Kickboxing",
                     value: 800,
                     dailydouble: false,
                     id: 'd12'
                 },
                 {
-                    clue: "Having these types of feet aid in aquatic locomotion ",
-                    answer: "Webbed",
+                    clue: "It may aid in breaking new ground in construction",
+                    answer: "Jackhammer",
                     value: 1200,
                     dailydouble: false,
                     id: 'd13'
                 },
                 {
-                    clue: "You might use one in conjunction with a microphone for your livestream",
-                    answer: "Webcam",
+                    clue: "Make sure to look both ways before crossing in this manner that breaks traffic laws",
+                    answer: "Jaywalking",
                     value: 1600,
                     dailydouble: false,
                     id: 'd14'
                 },
                 {
-                    clue: "A Noah who can help you know new words",
-                    answer: "Webster",
+                    clue: "Not to be confused with a panda's main food source, this may come as a surprise",
+                    answer: "Bamboozle",
                     value: 2000,
                     dailydouble: true,
                     id: 'd15'
@@ -406,40 +406,40 @@ const sampleBoard = {
             ]
         },
         {
-            category: "Magic Shows",
+            category: "FLAGS OF THE WORLD",
             clues: 
             [
                 {
-                    clue: "Toss a coin to Henry Cavill, who plays Geralt in this Netflix favorite",
-                    answer: "The Witcher",
+                    clue: "The red circle on this flag represents the rising sun",
+                    answer: "Japan",
                     value: 400,
                     dailydouble: false,
                     id: 'd16'
                 },
                 {
-                    clue: "The superhero name of this marvelous magic user Maximoff who landed her own show on Disney+",
-                    answer: "Scarlet Witch",
+                    clue: "The blue hexagram seen on this country's flag also represents the main religion there",
+                    answer: "Israel",
                     value: 800,
                     dailydouble: false,
                     id: 'd17'
                 },
                 {
-                    clue: "A family of magic-wielders can be found in a sandwich shop set on this real New York City street in Manhattan that stretches from Bank Street to Broadway",
-                    answer: "Wizards of Waverly Place",
+                    clue: "The only non-rectangular country flag in the world",
+                    answer: "Nepal",
                     value: 1200,
-                    dailydouble: false,
+                    dailydouble: true,
                     id: 'd18'
                 },
                 {
-                    clue: "The law of equivalent exchange doesn't stop some serious displays of alchemy in this 2009 Anime",
-                    answer: "Fullmetal Alchemist: Brotherhood",
+                    clue: "One of only two square flags, that of the smallest country in the world",
+                    answer: "The Vatican City",
                     value: 1600,
                     dailydouble: false,
                     id: 'd19'
                 },
                 {
-                    clue: "Vampires and demons stood no chance in this popular magic show which even had its own musical episode: Once More, with Feeling",
-                    answer: "Buffy the Vampire Slayer",
+                    clue: "The color purple can be found on just two flags in the world- Dominica's, and this Central American country known for its dramatic terrain of lakes, beaches, and volcanoes",
+                    answer: "Nicaragua",
                     value: 2000,
                     dailydouble: false,
                     id: 'd20'
@@ -447,40 +447,40 @@ const sampleBoard = {
             ]
         },
         {
-            category: "Finals Week",
+            category: "NON-AMERICAN LEADERS",
             clues: 
             [
                 {
-                    clue: "Gruesome deaths await pretty much everyone in this series of horror movies",
-                    answer: "Final Destination",
+                    clue: "The longest serving prime minister of Japan",
+                    answer: "Shinzo Abe",
                     value: 400,
                     dailydouble: false,
                     id: 'd21'
                 },
                 {
-                    clue: "Cloud Strife is just one of many main characters you may play in one of gamings longest running franchises ",
-                    answer: "Final Fantasy",
+                    clue: "The sixth king of The Old Babylonian Empire who enacted his own code of laws still referenced today",
+                    answer: "Hammurabi",
                     value: 800,
                     dailydouble: false,
                     id: 'd22'
                 },
                 {
-                    clue: "Space, as famously dubbed by Star Trek",
-                    answer: "The Final Frontier",
+                    clue: "Ex-Prime minster who became the world's youngest female head of government at age 37 in 2017",
+                    answer: "Jacinda Ardern",
                     value: 1200,
-                    dailydouble: true,
+                    dailydouble: false,
                     id: 'd23'
                 },
                 {
-                    clue: "Break a ball or charge a meter to activate this ultimate attack found in Nintendo's most popular fighting game",
-                    answer: "Final Smash",
+                    clue: "This king of both Denmark and Norway introduced Christianity to the former, and also lent his name to a technology used in many devices",
+                    answer: "Harald Bluetooth",
                     value: 1600,
-                    dailydouble: false,
+                    dailydouble: true,
                     id: 'd24'
                 },
                 {
-                    clue: "Swedish rock band Europe is responsible for this chart topping glam metal song",
-                    answer: "The Final Countdown",
+                    clue: "He said, `never again shall it be that this beautiful land will again experience the oppression of one by another`”",
+                    answer: "Nelson Mandela",
                     value: 2000,
                     dailydouble: false,
                     id: 'd25'
@@ -488,40 +488,40 @@ const sampleBoard = {
             ]
         },
         {
-            category: "Before and After",
+            category: "ALSO AN NBA TEAM",
             clues: 
             [
                 {
-                    clue: "Dwayne who performs on stage in front of thousands",
-                    answer: "The Rock Star",
+                    clue: "Large water birds with even larger beaks",
+                    answer: "Pelican",
                     value: 400,
                     dailydouble: false,
                     id: 'd26'
                 },
                 {
-                    clue: "The animals boarded two by two to escape flooding before Indy and the Nazis fought over control in Raiders",
-                    answer: "Noah's Ark of the Covenant",
+                    clue: "Music genre that originated in New Orleans with its roots in blues and ragtime",
+                    answer: "Jazz",
                     value: 800,
                     dailydouble: false,
                     id: 'd27'
                 },
                 {
-                    clue: "Deliver your package with free 2 hour shipping- or three, five, seven, or eleven if you prefer",
-                    answer: "Amazon Prime Number",
+                    clue: "Merlin, and Potter",
+                    answer: "Wizards",
                     value: 1200,
                     dailydouble: false,
                     id: 'd28'
                 },
                 {
-                    clue: "Watch where you're going while playing this Niantic mobile game, but make sure you catch 'em ALL",
-                    answer: "Pokemon Go Getter",
+                    clue: "Pack animals that are related to coyotes and jackals",
+                    answer: "Timberwolves",
                     value: 1600,
                     dailydouble: false,
                     id: 'd29'
                 },
                 {
-                    clue: "A stereotypical Australian phrase and a newly reimagined movie couple",
-                    answer: "Throw another shrimp on the Barbie and Ken",
+                    clue: "Historically, supporters of King Charles I in the English Civil War",
+                    answer: "Cavaliers",
                     value: 2000,
                     dailydouble: false,
                     id: 'd30'
@@ -532,12 +532,12 @@ const sampleBoard = {
     Final:
     [
         {
-            category: "Final",
+            category: "DREXEL UNIVERSITY",
             clues:
             [
                 {
-                    clue: "Final Question",              
-                    answer: "Final Answer",
+                    clue: "This student gave his name to the unique mascot of the university, the only Dragon mascot in the NCAA",              
+                    answer: "Mario Mascioli",
                     id: 'f1'
                 }
             ]
