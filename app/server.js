@@ -643,7 +643,6 @@ io.on('connection', (socket) => {
             console.log('Final Jeopardy reached!');
             for (let i = 0; i < room.players.length; i++) {
                 var player = room.players[i];
-                console.log(player.score);
                 if (player.score > 0) {
                     io.to(player.id).emit('finalJeopardyPrompt');
                 } else {
@@ -653,25 +652,18 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('setPlayerWager', ({ roomKey, wager, state }) => {
+    socket.on('setPlayerWager', ({ roomKey, wager, socketId }) => {
         const room = serverData.rooms.find(room => room.key === roomKey);
-        let currentPlayerName;
-        for (let i = 0; i < room.players.length; i++) {
-            var player = room.players[i];
-            if (player.id == room.metadata.currentlyBuzzedPlayer) {
-                player.wager = wager;
-                currentPlayerName = player.name;
-                break;
+
+        if (room.metadata.state == 3) {
+            for (let i = 0; i < room.players.length; i++) {
+                var player = room.players[i];
+                if (player.id == socketId) {
+                    player.wager = wager;
+                    break;
+                }
             }
-        }
 
-        if (state == 'double') {
-            io.to(room.host.id).emit('dailyDoubleHostView', { wager, currentPlayerName });
-
-            const question = room.metadata.currentQuestion;
-            const isDailyDouble = question.dailydouble;
-            io.to(room.pc.id).emit('dailyDoublePCView', { question, isDailyDouble });
-        } else if (state == 'final') {
             let allPlayersSubmittedFinalWagers = true;
             for (let i = 0; i < room.players.length; i++) {
                 var player = room.players[i];
@@ -682,21 +674,41 @@ io.on('connection', (socket) => {
             }
 
             if (allPlayersSubmittedFinalWagers) {
-                io.to(room.host.id).emit('finalQuestionSelected', questionInfo);
+                io.to(room.host.id).emit('finalQuestionSelected');
             }
+        } else {
+            let currentPlayerName;
+            for (let i = 0; i < room.players.length; i++) {
+                var player = room.players[i];
+                if (player.id == room.metadata.currentlyBuzzedPlayer) {
+                    player.wager = wager;
+                    currentPlayerName = player.name;
+                    break;
+                }
+            }
+            io.to(room.host.id).emit('dailyDoubleHostView', { wager, currentPlayerName });
+
+            const question = room.metadata.currentQuestion;
+            const isDailyDouble = question.dailydouble;
+            io.to(room.pc.id).emit('dailyDoublePCView', { question, isDailyDouble });
         }
     });
 
-    socket.on('submitFinalAnswer', ({ roomKey, answer }) => {
+    socket.on('submitFinalAnswer', ({ roomKey, answer, socketId }) => {
         const room = serverData.rooms.find(room => room.key === roomKey);
         for (let i = 0; i < room.players.length; i++) {
             var player = room.players[i];
-            player.finalAnswer = answer.toLowerCase();
+            if (player.id == socketId) {
+                console.log('Submitting final answer: ' + answer);
+                player.finalAnswer = answer.toLowerCase();
+            } 
         }
 
         let allPlayersSubmittedFinalAnswers = true;
+        console.log('checking that everyone submitted final answers');
         for (let i = 0; i < room.players.length; i++) {
             var player = room.players[i];
+            console.log('final answer: ' + player.finalAnswer);
             if (player.finalAnswer == null) {
                 allPlayersSubmittedFinalAnswers = false;
                 break;
@@ -704,6 +716,7 @@ io.on('connection', (socket) => {
         }
 
         if (allPlayersSubmittedFinalAnswers) {
+            console.log('everyone submitted final answers');
             let finalAnswer = room.metadata.currentQuestion.answer.toLowerCase();
             for (let i = 0; i < room.players.length; i++) {
                 var player = room.players[i];
@@ -736,6 +749,9 @@ io.on('connection', (socket) => {
                     io.to(player.id).emit('finalJeopardyAnswerPrompt');
                 }
             }
+
+            let question = room.metadata.currentQuestion;
+            io.to(room.pc.id).emit('finalPCView', question);
         } else {
             for (var i = 0; i < room.players.length; i++) {
                 var currentPlayer = room.players[i];
