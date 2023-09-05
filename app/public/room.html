@@ -4,6 +4,16 @@
     <meta charset="utf-8" />
     <title>Room</title>
     <style>
+        body{
+            background-color: navy;
+            color: goldenrod;
+            font-size: 15px;
+            
+        }
+        #startGameButton{
+            color: goldenrod;
+            background-color: navy !important;
+        }
         table { border-collapse: collapse; } 
         td, th { border: 1px solid black; padding: 8px; }
         div.zoomedCell { 
@@ -30,7 +40,7 @@
             transform: translate(-50%, -50%);
         }
         td.boardCell {
-            background-color: blue;
+            background-color: rgb(3, 3, 194);
             text-shadow: 2px 2px 2px black;
             color: white;
             vertical-align: top;
@@ -40,16 +50,18 @@
             pointer-events: none;
             opacity: 0.5;
         }
+        
     </style>
 </head>
 <body>
     <!-- Container for initial game behavior: displaying table of current players, room code, who the host is, and starting the game (host only) -->
     <div id="initialViewContainer" style="display: block;">
-        <h1>Jeopardy</h1>
+        <h1 id = "h1">Jeopardy</h1>
 
         <div id="roomInfoContainer" style="display: none;">
             <p id="roomCode" style="font-weight: bold;"></p>
             <p id="hostName" style="font-weight: bold;"></p>
+            <p id="pcNotFoundError" style="font-weight: bold; display: none;">PC must be present before game can be started. Please add a PC to the room.</p>
             <button id="startGameButton" style="display: none;" onclick="startGame()">Start Game</button>
         </div>
     
@@ -110,6 +122,8 @@
         let currDispName = localStorage.getItem('currentDisplayName');
         let currQuestionId = null;
 
+        let pcExists = false;
+
         let initialViewContainer = document.getElementById('initialViewContainer');
         let boardContainer = document.getElementById('boardContainer');
         let hostViewContainer = document.getElementById('hostViewContainer');
@@ -142,6 +156,11 @@
             }
 
             board = room.board;
+
+            if(room.pc){
+                pcExists = true;
+            }
+        
         });
 
         function updatePlayerTable(players) {
@@ -162,8 +181,14 @@
         }
 
         function startGame() {
-            socket.emit('startGame', roomKey);
-            socket.emit('setInitialHostView', roomKey);
+            if(pcExists){
+                socket.emit('startGame', roomKey);
+                socket.emit('setInitialHostView', roomKey);
+                document.getElementById('pcNotFoundError').style.display = "none";
+            }
+            else{
+                document.getElementById('pcNotFoundError').style.display = "block";
+            }
         }
 
         socket.on('gameStartView', ({ entityName, obj }) => {
@@ -265,6 +290,7 @@
                 for (let i = 0; i < 6; i++) {
                     let elements = [];
                     if (doubleJeopardy) {
+                        document.getElementById("h1").textContent = "Double Jeopardy";
                         if (i > 0) currentValue += 400;
                         console.log('Getting row elements for value ' + currentValue);
                         elements = retrieveBoardElements(i, board.Double, currentValue);

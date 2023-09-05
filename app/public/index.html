@@ -3,18 +3,49 @@
 <head>
     <meta charset="utf-8" />
     <title>Jeopardy Project</title>
+    <style>
+        body {
+            background-color: navy;
+            color: goldenrod;
+        }
+    
+    
+        h1 {
+            text-align: center;
+            margin-top: 30px; /* Adjust this value to control the vertical position */
+            font-size: 70px;
+        }
+
+        div{
+            text-align: center;
+            margin-top: 70px;
+            font-size: 45px;
+        }
+
+        button{
+            font-size: 45px;
+            background-color: navy;
+            color: goldenrod;
+        }
+
+        input[type="text"] {
+            width: 300px; 
+            font-size: 24px; 
+        }
+    </style>
 </head>
 <body>
-    <h1>Jeopardy Project</h1>
+    <h1>Jeopardy!</h1>
     <div>
         <label for="display_name">Display Name:</label>
         <input id="display_name" name="display_name" type="text" />
         <p id="errorMessage"></p>
+        <button id="createRoom" onclick="createRoom()">Create Room</button><br><br>
+        <button id="joinRoom" onclick="joinRoom()">Join Room</button><br><br>
+        <button id="joinRoomPC" onclick="joinRoomPC()">Join Room as Display PC</button><br><br>
     </div>
 
-    <button id="createRoom" onclick="createRoom()">Create Room</button><br><br>
-    <button id="joinRoom" onclick="joinRoom()">Join Room</button><br><br>
-    <button id="joinRoomPC" onclick="joinRoomPC()">Join Room as Display PC</button><br><br>
+    
 
     <script>
         function createRoom() {

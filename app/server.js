@@ -545,6 +545,7 @@ const sampleBoard = {
     ]
 };
 
+
 app.get('/room/:roomkey', (req, res) => {
     const roomKey = req.params.roomkey;
     const room = serverData.rooms.find(room => room.key === roomKey);
@@ -591,9 +592,11 @@ io.on('connection', (socket) => {
         io.to(roomKey).emit('getRoomInfo', { room, isHost });
     });
 
+
     socket.on('startGame', (roomKey) => {
         console.log('Starting the game...');
         const room = serverData.rooms.find(room => room.key === roomKey);
+        
         room.metadata.currentPlayer = room.players[0].id;
 
         let obj = {}; // emptyObj exists to pass an empty object to host and player emits since they still need a second parameter
@@ -610,6 +613,7 @@ io.on('connection', (socket) => {
         entityName = 'pc';
         obj = room.board;
         io.to(room.pc.id).emit('gameStartView', { entityName, obj });
+        
     });
 
     socket.on('setInitialHostView', (roomKey) => {
@@ -785,6 +789,7 @@ app.post('/joinRoomPC', (req, res) => {
 
     if (room) {
         room.pc = { id: null };
+        pcJoined = true;
         res.status(200).json({ room });
     } else {
         res.status(404).json({ error: 'Room not found' });
