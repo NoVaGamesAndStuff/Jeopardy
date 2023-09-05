@@ -1,2 +1,2 @@
 # Jeopardy
-Jeopardy for CS375
+Our project is publicly hosted at: cs375jeopardy.azurewebsites.net
