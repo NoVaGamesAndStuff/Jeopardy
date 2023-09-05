@@ -314,12 +314,12 @@
                 doubleJeopardyCells--;
 
                 if (singleJeopardyCells === 0) {
-                    singleJeopardy = false;
-                    doubleJeopardy = true;
+                    let newState = 2;
+                    socket.emit('updateGameState', { roomKey, newState });
                 }
-                if (doubleJeopardyCells === 0){
-                    doubleJeopardy = false;
-                    finalJeopardy = true;
+                if (doubleJeopardyCells === 0) {
+                    let newState = 3;
+                    socket.emit('updateGameState', { roomKey, newState });
                 }
 
                 displayZoomedCell(question, isDailyDouble, false);
@@ -457,8 +457,13 @@
             wagerContainer.style.display = 'block';
 
             const buzzer = document.getElementById('buzzer');
-            wagerContainer.style.display = 'none';
+            buzzer.style.display = 'none';
         });
+
+        // socket.on('failedFinalJeopardy', () => {
+        //     const buzzer = document.getElementById('buzzer');
+        //     wagerContainer.style.display = 'none';
+        // });
         
         function submitWager() {
             const wagerInput = document.getElementById('wagerInput');
@@ -507,14 +512,14 @@
                 return false;
             } else {
                 if (singleJeopardy) {
-                    if (wager <= 1000 || currentPlayerScore >= wager) {
+                    if ((wager <= 1000 && currentPlayerScore <= wager) || currentPlayerScore >= wager) {
                         return true;
                     } else {
                         alert('Your score must be greater than or equal to your wager!');
                         return false;
                     }
                 } else if (doubleJeopardy) {
-                    if (wager <= 1000 || currentPlayerScore >= wager) {
+                    if ((wager <= 2000 && currentPlayerScore <= wager) || currentPlayerScore >= wager) {
                         return true;
                     } else {
                         alert('Your score must be greater than or equal to your wager!');
@@ -656,6 +661,16 @@
 
         socket.on('updateTable', (room) => {
             updatePlayerTable(room.players);
+        });
+
+        socket.on('newGameState', (state) => {
+            if (state === 2) {
+                singleJeopardy = false;
+                doubleJeopardy = true;
+            } else if (state === 3) {
+                doubleJeopardy = false;
+                finalJeopardy = true;
+            }
         });
     </script>
 </body>

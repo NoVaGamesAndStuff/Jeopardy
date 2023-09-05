@@ -475,7 +475,7 @@ const sampleBoard = {
                     clue: "This king of both Denmark and Norway introduced Christianity to the former, and also lent his name to a technology used in many devices",
                     answer: "Harald Bluetooth",
                     value: 1600,
-                    dailydouble: true,
+                    dailydouble: false,
                     id: 'd24'
                 },
                 {
@@ -633,6 +633,7 @@ io.on('connection', (socket) => {
         room.metadata.currentQuestion = questionInfo;
         io.to(room.host.id).emit('questionSelected', questionInfo);
         
+        
         if (room.metadata.currentQuestion.dailydouble) {
             console.log('Daily Double reached!');
             room.metadata.currentlyBuzzedPlayer = room.metadata.currentPlayer;
@@ -642,10 +643,11 @@ io.on('connection', (socket) => {
             console.log('Final Jeopardy reached!');
             for (let i = 0; i < room.players.length; i++) {
                 var player = room.players[i];
+                console.log(player.score);
                 if (player.score > 0) {
                     io.to(player.id).emit('finalJeopardyPrompt');
                 } else {
-                    io.to(player.id).emit('failedFinalJeopardy', currentPlayerScore);
+                    // io.to(player.id).emit('failedFinalJeopardy', currentPlayerScore);
                 }
             }
         }
@@ -841,6 +843,19 @@ io.on('connection', (socket) => {
         io.to(room.pc.id).emit('revertPCView');
     });
 
+    socket.on('updateGameState', ({ roomKey, newState }) => {
+        const room = serverData.rooms.find(room => room.key === roomKey);
+        room.metadata.state = newState;
+
+        io.to(room.host.id).emit('newGameState', newState);
+        io.to(room.pc.id).emit('newGameState', newState);
+
+        for (let i = 0; i < room.players.length; i++) {
+            var player = room.players[i];
+            io.to(player.id).emit('newGameState', newState);
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('user disconnected');
     });
@@ -880,7 +895,8 @@ app.post('/createRoom', (req, res) => {
             currentPlayer: null,
             currentlyBuzzedPlayer: null,
             currentQuestion: null,
-            buzzedPlayers: []
+            buzzedPlayers: [],
+            state: 1
         }
     };
 
