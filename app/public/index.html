@@ -77,7 +77,7 @@
                 return;
             }
 
-            fetch('http://localhost:3000/joinRoom', {
+            fetch('joinRoom', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -87,7 +87,7 @@
             .then(response => {
                 if (response.status === 200) {
                     
-                    window.location.href = `http://localhost:3000/room/${roomKey}`;
+                    window.location.href = `room/${roomKey}`;
                 } else if (response.status === 400) {
                     return response.json().then(data => {
                         document.getElementById("errorMessage").textContent = "That name is already taken. Please try another name";
