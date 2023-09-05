@@ -638,10 +638,20 @@ io.on('connection', (socket) => {
             room.metadata.currentlyBuzzedPlayer = room.metadata.currentPlayer;
             var currentPlayerScore = getPlayer(room.players, room.metadata.currentlyBuzzedPlayer).score;
             io.to(room.metadata.currentlyBuzzedPlayer).emit('dailyDoublePrompt', currentPlayerScore);
+        } else if (room.metadata.currentQuestion.id.charAt(0) == 'f') {
+            console.log('Final Jeopardy reached!');
+            for (let i = 0; i < room.players.length; i++) {
+                var player = room.players[i];
+                if (player.score > 0) {
+                    io.to(player.id).emit('finalJeopardyPrompt');
+                } else {
+                    io.to(player.id).emit('failedFinalJeopardy', currentPlayerScore);
+                }
+            }
         }
     });
 
-    socket.on('setPlayerWager', ({ roomKey, wager }) => {
+    socket.on('setPlayerWager', ({ roomKey, wager, state }) => {
         const room = serverData.rooms.find(room => room.key === roomKey);
         let currentPlayerName;
         for (let i = 0; i < room.players.length; i++) {
@@ -653,15 +663,83 @@ io.on('connection', (socket) => {
             }
         }
 
-        io.to(room.host.id).emit('dailyDoubleHostView', { wager, currentPlayerName });
+        if (state == 'double') {
+            io.to(room.host.id).emit('dailyDoubleHostView', { wager, currentPlayerName });
+
+            const question = room.metadata.currentQuestion;
+            const isDailyDouble = question.dailydouble;
+            io.to(room.pc.id).emit('dailyDoublePCView', { question, isDailyDouble });
+        } else if (state == 'final') {
+            let allPlayersSubmittedFinalWagers = true;
+            for (let i = 0; i < room.players.length; i++) {
+                var player = room.players[i];
+                if (player.wager == null) {
+                    allPlayersSubmittedFinalWagers = false;
+                    break;
+                }
+            }
+
+            if (allPlayersSubmittedFinalWagers) {
+                io.to(room.host.id).emit('finalQuestionSelected', questionInfo);
+            }
+        }
     });
 
-    socket.on('unlockQuestion', (roomKey) => {
+    socket.on('submitFinalAnswer', ({ roomKey, answer }) => {
         const room = serverData.rooms.find(room => room.key === roomKey);
-        for (var i = 0; i < room.players.length; i++) {
-            var currentPlayer = room.players[i];
-            var playerName = currentPlayer.name;
-            if (room.metadata.buzzedPlayers.includes(currentPlayer.id) == false) io.to(currentPlayer.id).emit('enableBuzzer', playerName);
+        for (let i = 0; i < room.players.length; i++) {
+            var player = room.players[i];
+            player.finalAnswer = answer.toLowerCase();
+        }
+
+        let allPlayersSubmittedFinalAnswers = true;
+        for (let i = 0; i < room.players.length; i++) {
+            var player = room.players[i];
+            if (player.finalAnswer == null) {
+                allPlayersSubmittedFinalAnswers = false;
+                break;
+            }
+        }
+
+        if (allPlayersSubmittedFinalAnswers) {
+            let finalAnswer = room.metadata.currentQuestion.answer.toLowerCase();
+            for (let i = 0; i < room.players.length; i++) {
+                var player = room.players[i];
+                if (player.finalAnswer == finalAnswer) {
+                    player.score += player.wager;
+                } else {
+                    player.score -= player.wager;
+                }
+            }
+
+            let winner = getWinner(room.players);
+            io.to(winner.id).emit('winner', winner);
+
+            for (let i = 0; i < room.players.length; i++) {
+                var player = room.players[i];
+                if (player.id != winner.id) {
+                    io.to(player.id).emit('loser', player);
+                }
+            }
+        }
+    });
+
+    socket.on('unlockQuestion', ({ roomKey, finalJeopardy }) => {
+        const room = serverData.rooms.find(room => room.key === roomKey);
+
+        if (finalJeopardy) {
+            for (let i = 0; i < room.players.length; i++) {
+                var player = room.players[i];
+                if (player.score > 0) {
+                    io.to(player.id).emit('finalJeopardyAnswerPrompt');
+                }
+            }
+        } else {
+            for (var i = 0; i < room.players.length; i++) {
+                var currentPlayer = room.players[i];
+                var playerName = currentPlayer.name;
+                if (room.metadata.buzzedPlayers.includes(currentPlayer.id) == false) io.to(currentPlayer.id).emit('enableBuzzer', playerName);
+            }
         }
     });
 
@@ -711,7 +789,7 @@ io.on('connection', (socket) => {
             if (player.id == room.metadata.currentlyBuzzedPlayer) {
                 if (room.metadata.currentQuestion.dailydouble) {
                     player.score += parseInt(player.wager);
-                    player.wager = 0;
+                    player.wager = null;
                 } else {
                     player.score += room.metadata.currentQuestion.value;
                 }
@@ -740,7 +818,7 @@ io.on('connection', (socket) => {
             if (player.id == room.metadata.currentlyBuzzedPlayer) {
                 if (room.metadata.currentQuestion.dailydouble) {
                     player.score -= parseInt(player.wager);
-                    player.wager = 0;
+                    player.wager = null;
                 } else {
                     player.score -= room.metadata.currentQuestion.value;
                 }
@@ -774,7 +852,7 @@ app.post('/joinRoom', (req, res) => {
 
     if (room) {
         if (isPlayerNameUnique(room.players, displayName)) {
-            let player = { name: displayName, score: 0, id: null };
+            let player = { name: displayName, score: 0, id: null, wager: 0, finalAnswer: null };
             room.players.push(player);
             res.status(200).json({ room });
         } else if (!isPlayerNameUnique(room.players, displayName)) {
@@ -867,6 +945,17 @@ function isPlayerNameUnique(playerArray, playerNameToCheck) {
       }
     }
     return true;
+}
+
+function getWinner(arr) {
+    var leader;
+    for (let i = 0; i < arr.length; i++) {
+        if (leader == null || arr[i].score > leader.score) {
+            leader = arr[i];
+        }
+    }
+
+    return leader;
 }
 
 server.listen(port, hostname, () => {

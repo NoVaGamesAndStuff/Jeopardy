@@ -58,7 +58,7 @@
             opacity: 0.5;
         }
 
-        #rightButton, #wrongButton, #unlockQuestion, #submitWager {
+        #rightButton, #wrongButton, #unlockQuestion, #submitWager, #submitFinal {
             font-size: 35px;
             background-color: navy;
             color: goldenrod;
@@ -103,6 +103,7 @@
             <button id="rightButton" onclick="rightAnswer()">Right Answer</button>
             <button id="wrongButton" onclick="wrongAnswer()">Wrong Answer</button>
         </div>
+        <div id="finalJeopardyHostContainer" style="display: none;">Waiting for everyone to submit their wagers...</div>
     </div>
 
     <!-- Container for all player behavior: buzzer, displaying score, etc. -->
@@ -116,6 +117,14 @@
             <label for="wagerInput">Select the amount you'd like to wager:</label>
             <input id="wagerInput" name="wagerInput" type="number" /><br><br>
             <button id="submitWager" onclick="submitWager()">Submit</button>
+        </div>
+        <div id="finalJeopardyPlayerContainer">
+            <div id="waitingForFinalQuestion" style="display: none;">Waiting for the host to unlock the question...</div>
+            <div id="finalSubmission" style="display: none;">
+                <label for="finalInput">Write your answer:</label>
+                <input id="finalInput" name="finalInput" type="text" /><br><br>
+                <button id="submitFinal" onclick="submitFinal()">Submit</button>
+            </div>
         </div>
     </div>
 
@@ -233,30 +242,50 @@
             if (questionInfo.dailydouble) {
                 const dailyDoubleContainer = document.getElementById('dailyDoubleContainer');
                 dailyDoubleContainer.style.display = 'block';
+            } else if (questionInfo.id.charAt(0) == 'f') {
+                const finalJeopardyHostContainer = document.getElementById('finalJeopardyHostContainer');
+                finalJeopardyHostContainer.style.display = 'block';
             } else {
                 document.getElementById('unlockQuestion').style.display = 'block';
             }
         });
 
-        function displayZoomedCell(questionText, isDailyDouble) {
+        socket.on('finalQuestionSelected', () => {
+            const unlockQuestion = document.getElementById('unlockQuestion');
+            unlockQuestion.style.display = 'block';
+        });
+
+        function displayZoomedCell(question, isDailyDouble, displayQuestionAfterClick) {
             let zoomedCell = document.createElement('div');
             zoomedCell.className = 'zoomedCell';
-            if (isDailyDouble) {
-                zoomedCell.innerHTML = 'DAILY DOUBLE<br><br>' + questionText;
+
+            if (displayQuestionAfterClick) {
+                console.log('Making daily double clue view...');
+                zoomedCell.innerHTML = question.clue;
+
+                boardContainer.innerHTML = ''; 
+                boardContainer.appendChild(zoomedCell);
             } else {
-                zoomedCell.innerHTML = questionText;
+                if (isDailyDouble) {
+                    zoomedCell.innerHTML = 'DAILY DOUBLE';
+                } else if (question.id.charAt(0) == 'f') {
+                    zoomedCell.innerHTML = 'FINAL JEOPARDY';
+                } else {
+                    zoomedCell.innerHTML = question.clue;
+                }
+
+                boardContainer.innerHTML = ''; 
+                boardContainer.appendChild(zoomedCell);
+
+                if (isDailyDouble == false && question.id.charAt(0) != 'f') {
+                    zoomedCell.addEventListener('click', function () {
+                        boardContainer.innerHTML = '';
+                        displayBoard(board, doubleJeopardy, finalJeopardy);
+                        socket.emit('lockQuestion', roomKey);
+                        socket.emit('resetHostView', roomKey);
+                    });
+                }
             }
-            
-
-            boardContainer.innerHTML = ''; 
-            boardContainer.appendChild(zoomedCell);
-
-            zoomedCell.addEventListener('click', function () {
-                boardContainer.innerHTML = '';
-                displayBoard(board, doubleJeopardy, finalJeopardy);
-                socket.emit('lockQuestion', roomKey);
-                socket.emit('resetHostView', roomKey);
-            });
         }
 
         function handleCellClick(event) {   
@@ -267,19 +296,15 @@
                 selectedCells.add(questionID); 
 
                 let question = null;
-                let questionText = 'N/A'; 
                 let isDailyDouble = false;
                 if (questionID.charAt(0) == 's') {
                     question = getQuestion(board.Single, questionID);
-                    questionText = question.clue;
                     isDailyDouble = question.dailydouble;
                 } else if (questionID.charAt(0) == 'd') {
                     question = getQuestion(board.Double, questionID);
-                    questionText = question.clue;
                     isDailyDouble = question.dailydouble;
                 } else if (questionID.charAt(0) == 'f') {
                     question = getQuestion(board.Final, questionID);
-                    questionText = question.clue;
                     isDailyDouble = question.dailydouble;
                 }
 
@@ -297,7 +322,7 @@
                     finalJeopardy = true;
                 }
 
-                displayZoomedCell(questionText, isDailyDouble);
+                displayZoomedCell(question, isDailyDouble, false);
                 socket.emit('selectQuestion', { roomKey, questionID });
             }
         }
@@ -427,18 +452,53 @@
             wagerContainer.style.display = 'block';
         });
 
+        socket.on('finalJeopardyPrompt', () => {
+            const wagerContainer = document.getElementById('wagerContainer');
+            wagerContainer.style.display = 'block';
+
+            const buzzer = document.getElementById('buzzer');
+            wagerContainer.style.display = 'none';
+        });
+        
         function submitWager() {
             const wagerInput = document.getElementById('wagerInput');
             let wager = wagerInput.value;
             let validWager = setWager(currentScore, wager);
 
             if (validWager) {
-                socket.emit('setPlayerWager', { roomKey, wager });
+                if (finalJeopardy) {
+                    let state = 'final';
+                    socket.emit('setPlayerWager', { roomKey, wager, state });
+                } else {
+                    let state = 'double';
+                    socket.emit('setPlayerWager', { roomKey, wager, state });
+                }
+            
                 const wagerContainer = document.getElementById('wagerContainer');
                 wagerContainer.style.display = 'none';
 
                 wagerInput.value = 0;
+
+                if (finalJeopardy) {
+                    const waitingForFinalQuestion = document.getElementById('waitingForFinalQuestion');
+                    waitingForFinalQuestion.style.display = 'block';
+                }
             } 
+        }
+
+        socket.on('finalJeopardyAnswerPrompt', () => {
+            const finalSubmission = document.getElementById('finalSubmission');
+            finalSubmission.style.display = 'block';
+        });
+
+        function submitFinal() {
+            const finalInput = document.getElementById('finalInput');
+            let answer = finalInput.value;
+
+            const waitingForFinalQuestion = document.getElementById('waitingForFinalQuestion');
+            waitingForFinalQuestion.innerHTML = 'Waiting for game results...';
+            waitingForFinalQuestion.style.display = 'block';
+            socket.emit('submitFinalAnswer', { roomKey, answer });
         }
         
         function setWager(currentPlayerScore, wager) {
@@ -477,6 +537,11 @@
 
             const answerButtons = document.getElementById('answerButtons');
             answerButtons.style.display = 'block';
+        });
+
+        socket.on('dailyDoublePCView', ({ question, isDailyDouble }) => {
+            console.log('Setting daily double clue view...' + isDailyDouble);
+            displayZoomedCell(question, isDailyDouble, true);
         });
 
         function createBoard(rows, columns) {
@@ -532,7 +597,7 @@
             const answerButtons = document.getElementById('answerButtons');
             answerButtons.style.display = 'none';
 
-            socket.emit('unlockQuestion', roomKey);
+            socket.emit('unlockQuestion', { roomKey, finalJeopardy });
         }
 
         socket.on('reUnlockQuestion', (room) => {
@@ -575,6 +640,14 @@
         function wrongAnswer() {
             socket.emit('wrongAnswer', roomKey);
         }
+
+        socket.on('winner', (winner) => {
+            gameEndViewContainer.innerHTML = 'Congrats! You won with a score of ' + winner.score;
+        });
+
+        socket.on('loser', (player) => {
+            gameEndViewContainer.innerHTML = 'Better luck next time! You lost with a score of ' + player.score;
+        });
 
         socket.on('revertPCView', () => {
             boardContainer.innerHTML = '';
