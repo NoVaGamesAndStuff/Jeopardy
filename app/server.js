@@ -739,9 +739,16 @@ app.post('/joinRoom', (req, res) => {
     let room = serverData.rooms.find(room => room.key === roomKey);
 
     if (room) {
-        let player = { name: displayName, score: 0, id: null };
-        room.players.push(player);
-        res.status(200).json({ room });
+        if(isPlayerNameUnique(room.players, displayName)){
+            let player = { name: displayName, score: 0, id: null };
+            room.players.push(player);
+            res.status(200).json({ room });
+        }
+        else if (!isPlayerNameUnique(room.players, displayName)){
+            console.log(`${displayName} is taken. Please choose a different name`);
+            res.status(400).json({error: 'Name is already taken'});
+        }
+        
     } else {
         res.status(404).json({ error: 'Room not found' });
     }
@@ -818,6 +825,15 @@ function getPlayer(arr, id) {
     }
 
     return player;
+}
+
+function isPlayerNameUnique(playerArray, playerNameToCheck) {
+    for (let i = 0; i < playerArray.length; i++) {
+      if (playerArray[i].name === playerNameToCheck) {
+        return false;
+      }
+    }
+    return true;
 }
 
 server.listen(port, hostname, () => {

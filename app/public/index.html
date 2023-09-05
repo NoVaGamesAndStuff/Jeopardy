@@ -9,6 +9,7 @@
     <div>
         <label for="display_name">Display Name:</label>
         <input id="display_name" name="display_name" type="text" />
+        <p id="errorMessage"></p>
     </div>
 
     <button id="createRoom" onclick="createRoom()">Create Room</button><br><br>
@@ -45,16 +46,26 @@
                 return;
             }
 
-            fetch('joinRoom', {
+            fetch('http://localhost:3000/joinRoom', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ displayName, roomKey })
             })
-            .then(response => response.json())
-            .then(data => {
-                window.location.href = `room/${roomKey}`;
+            .then(response => {
+                if (response.status === 200) {
+                    
+                    window.location.href = `http://localhost:3000/room/${roomKey}`;
+                } else if (response.status === 400) {
+                    
+                    return response.json().then(data => {
+                        document.getElementById("errorMessage").textContent = "That name is already taken. Please try another name";
+                    });
+                } else {
+                    
+                    console.error('Error joining room. Status:', response.status);
+                }
             })
             .catch(error => {
                 console.error('Error joining room:', error);
