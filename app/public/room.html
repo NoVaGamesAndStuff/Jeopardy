@@ -4,18 +4,22 @@
     <meta charset="utf-8" />
     <title>Room</title>
     <style>
-        body{
+        body {
             background-color: navy;
             color: goldenrod;
-            font-size: 15px;
-            
+            font-size: 25px;
         }
-        #startGameButton{
+
+        #startGameButton {
             color: goldenrod;
             background-color: navy !important;
+            font-size: 25px;
         }
+
         table { border-collapse: collapse; } 
+
         td, th { border: 1px solid black; padding: 8px; }
+
         div.zoomedCell { 
             background-color: blue; 
             text-shadow: 2px 2px 2px black;
@@ -30,6 +34,7 @@
             transform: translate(-50%, -50%);
             cursor: pointer;
         }
+
         table.jeopardyboard {
             width: 1000px;
             height: 600px;
@@ -39,6 +44,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
         }
+
         td.boardCell {
             background-color: rgb(3, 3, 194);
             text-shadow: 2px 2px 2px black;
@@ -46,9 +52,16 @@
             vertical-align: top;
             text-align: center;
         }
+
         .disabled {
             pointer-events: none;
             opacity: 0.5;
+        }
+
+        #rightButton, #wrongButton, #unlockQuestion, #submitWager {
+            font-size: 35px;
+            background-color: navy;
+            color: goldenrod;
         }
         
     </style>
@@ -56,7 +69,7 @@
 <body>
     <!-- Container for initial game behavior: displaying table of current players, room code, who the host is, and starting the game (host only) -->
     <div id="initialViewContainer" style="display: block;">
-        <h1 id = "h1">Jeopardy</h1>
+        <h1 id="h1">Jeopardy</h1>
 
         <div id="roomInfoContainer" style="display: none;">
             <p id="roomCode" style="font-weight: bold;"></p>
@@ -83,6 +96,7 @@
         <div id="waitingForQuestionSelect" style="display: block;"></div>
         <div id="questionContainer" style="display: none;"></div>
         <div id="answerContainer" style="display: none;"></div><br><br>
+        <div id="dailyDoubleContainer" style="display: none;">Daily Double! Waiting for the wager to be set...<br><br></div>
         <div id="buzzedPlayerInfo" style="display: none;"></div><br><br>
         <button id="unlockQuestion" onclick="unlockQuestion()" style="display: none;">Unlock Question</button>
 		<div id="answerButtons" style="display: none;">
@@ -97,11 +111,13 @@
         <button id="buzzer" onclick="buzz()" disabled>
             <img src="/assets/buzzer_enabled.jpg" alt="enabled buzzer">
         </button>
+        <br><br>
+        <div id="wagerContainer" style="display: none;">
+            <label for="wagerInput">Select the amount you'd like to wager:</label>
+            <input id="wagerInput" name="wagerInput" type="number" /><br><br>
+            <button id="submitWager" onclick="submitWager()">Submit</button>
+        </div>
     </div>
-    <!-- <div id="wagerContainer" style="display: block;"> -->
-        <!-- <button id="setWagerButton"onclick="setWager()">Set Wager</button> -->
-        <!-- <input id="wager_input" name="wager_input" type="text" /> -->
-    <!-- </div> -->
 
     <!-- Container for end game behavior: displaying the winner -->
     <div id="gameEndViewContainer" style="display: none;"></div>
@@ -117,7 +133,7 @@
             socketId = socket.id;
         });
 
-        let wagerValue = 0;
+        let currentScore = 0;
         let board = null;
         let currDispName = localStorage.getItem('currentDisplayName');
         let currQuestionId = null;
@@ -130,6 +146,7 @@
         let playerViewContainer = document.getElementById('playerViewContainer');
         let gameEndViewContainer = document.getElementById('gameEndViewContainer');
 
+        let singleJeopardy = true;
         let doubleJeopardy = false;
         let finalJeopardy = false;
         let singleJeopardyCells = 30;
@@ -156,11 +173,6 @@
             }
 
             board = room.board;
-
-            if(room.pc){
-                pcExists = true;
-            }
-        
         });
 
         function updatePlayerTable(players) {
@@ -181,14 +193,8 @@
         }
 
         function startGame() {
-            if(pcExists){
-                socket.emit('startGame', roomKey);
-                socket.emit('setInitialHostView', roomKey);
-                document.getElementById('pcNotFoundError').style.display = "none";
-            }
-            else{
-                document.getElementById('pcNotFoundError').style.display = "block";
-            }
+            socket.emit('startGame', roomKey);
+            socket.emit('setInitialHostView', roomKey);
         }
 
         socket.on('gameStartView', ({ entityName, obj }) => {
@@ -224,13 +230,23 @@
             answerContainer.style.display = 'block';
             answerContainer.textContent = 'Answer: ' + questionInfo.answer;
 
-            document.getElementById('unlockQuestion').style.display = 'block';
+            if (questionInfo.dailydouble) {
+                const dailyDoubleContainer = document.getElementById('dailyDoubleContainer');
+                dailyDoubleContainer.style.display = 'block';
+            } else {
+                document.getElementById('unlockQuestion').style.display = 'block';
+            }
         });
 
-        function displayZoomedCell(questionText) {
+        function displayZoomedCell(questionText, isDailyDouble) {
             let zoomedCell = document.createElement('div');
             zoomedCell.className = 'zoomedCell';
-            zoomedCell.textContent = questionText;
+            if (isDailyDouble) {
+                zoomedCell.innerHTML = 'DAILY DOUBLE<br><br>' + questionText;
+            } else {
+                zoomedCell.innerHTML = questionText;
+            }
+            
 
             boardContainer.innerHTML = ''; 
             boardContainer.appendChild(zoomedCell);
@@ -243,20 +259,28 @@
             });
         }
 
-        function handleCellClick(event) {           
+        function handleCellClick(event) {   
             const clickedCell = event.target;
 
             if (!selectedCells.has(clickedCell.id)) { 
                 const questionID = clickedCell.id;
                 selectedCells.add(questionID); 
 
+                let question = null;
                 let questionText = 'N/A'; 
+                let isDailyDouble = false;
                 if (questionID.charAt(0) == 's') {
-                    questionText = getQuestionText(board.Single, questionID);
+                    question = getQuestion(board.Single, questionID);
+                    questionText = question.clue;
+                    isDailyDouble = question.dailydouble;
                 } else if (questionID.charAt(0) == 'd') {
-                    questionText = getQuestionText(board.Double, questionID);
+                    question = getQuestion(board.Double, questionID);
+                    questionText = question.clue;
+                    isDailyDouble = question.dailydouble;
                 } else if (questionID.charAt(0) == 'f') {
-                    questionText = getQuestionText(board.Final, questionID);
+                    question = getQuestion(board.Final, questionID);
+                    questionText = question.clue;
+                    isDailyDouble = question.dailydouble;
                 }
 
                 clickedCell.style.backgroundColor = 'gray'; 
@@ -265,6 +289,7 @@
                 doubleJeopardyCells--;
 
                 if (singleJeopardyCells === 0) {
+                    singleJeopardy = false;
                     doubleJeopardy = true;
                 }
                 if (doubleJeopardyCells === 0){
@@ -272,7 +297,7 @@
                     finalJeopardy = true;
                 }
 
-                displayZoomedCell(questionText);
+                displayZoomedCell(questionText, isDailyDouble);
                 socket.emit('selectQuestion', { roomKey, questionID });
             }
         }
@@ -290,7 +315,6 @@
                 for (let i = 0; i < 6; i++) {
                     let elements = [];
                     if (doubleJeopardy) {
-                        document.getElementById("h1").textContent = "Double Jeopardy";
                         if (i > 0) currentValue += 400;
                         console.log('Getting row elements for value ' + currentValue);
                         elements = retrieveBoardElements(i, board.Double, currentValue);
@@ -381,59 +405,79 @@
             return elements;
         }
 
-        function getQuestionText(arr, id) {
-            let text = 'N/A';
+        function getQuestion(arr, id) {
+            let question = null;
             for (let i = 0; i < arr.length; i++) {
                 let category = arr[i];
                 for (let j = 0; j < category.clues.length; j++) {
                     if (category.clues[j].id == id) {
-                        text = category.clues[j].clue;
+                        question = category.clues[j];
                         break;
                     }
                 }
             }
 
-            return text;
+            return question;
         }
 
-        function setWager(wager, gameState){
-            if(singleJeopardy){
-                if(currentPlayer.score < wager){
-                    console.log("Your score must be greater than or equal to your wager.")
-                }
-                else if(currentPlayer.score < wager || wager <= 1000){
-                    wagerValue = wager;
-                }
-                else if(currentPlayer.score > wager)
-                {
-                    wagerValue = wager;
-                }
-            }
-            if(doubleJeopardy){
-                if(currentPlayer.score < wager){
-                        console.log("Your score must be greater than or equal to your wager.")
-                    }
-                    else if(currentPlayer.score < wager || wager <= 2000){
-                        wagerValue = wager;
-                    }
-                    else if(currentPlayer.score > wager)
-                    {
-                        wagerValue = wager;
-                    }
-                }
-            if(finalJeopardy){
-                if(currentPlayer.score < wager){
-                    console.log("Your score must be greater than or equal to your wager.")
-                }
-                else
-                {
-                    wagerValue = wager;
-                }
-            }
-    
-            console.log("Wager set");
-    
+        socket.on('dailyDoublePrompt', (currentPlayerScore) => {
+            currentScore = currentPlayerScore;
+
+            const wagerContainer = document.getElementById('wagerContainer');
+            wagerContainer.style.display = 'block';
+        });
+
+        function submitWager() {
+            const wagerInput = document.getElementById('wagerInput');
+            let wager = wagerInput.value;
+            let validWager = setWager(currentScore, wager);
+
+            if (validWager) {
+                socket.emit('setPlayerWager', { roomKey, wager });
+                const wagerContainer = document.getElementById('wagerContainer');
+                wagerContainer.style.display = 'none';
+
+                wagerInput.value = 0;
+            } 
         }
+        
+        function setWager(currentPlayerScore, wager) {
+            if (wager == null || wager == '') {
+                alert('You did not provide a wager amount. Please try again.');
+                return false;
+            } else {
+                if (singleJeopardy) {
+                    if (wager <= 1000 || currentPlayerScore >= wager) {
+                        return true;
+                    } else {
+                        alert('Your score must be greater than or equal to your wager!');
+                        return false;
+                    }
+                } else if (doubleJeopardy) {
+                    if (wager <= 1000 || currentPlayerScore >= wager) {
+                        return true;
+                    } else {
+                        alert('Your score must be greater than or equal to your wager!');
+                        return false;
+                    }
+                } else if (finalJeopardy) {
+                    if (currentPlayerScore >= wager) {
+                        return true;
+                    } else {
+                        alert('Your score must be greater than or equal to your wager!');
+                        return false;
+                    }
+                }
+            }
+        }
+
+        socket.on('dailyDoubleHostView', ({ wager, currentPlayerName }) => {
+            const dailyDoubleContainer = document.getElementById('dailyDoubleContainer');
+            dailyDoubleContainer.innerHTML = currentPlayerName + ' wagered $' + wager + '<br><br>';
+
+            const answerButtons = document.getElementById('answerButtons');
+            answerButtons.style.display = 'block';
+        });
 
         function createBoard(rows, columns) {
             let board = [];
@@ -471,6 +515,10 @@
 
             const answerButtons = document.getElementById('answerButtons');
             answerButtons.style.display = 'none';
+
+            const dailyDoubleContainer = document.getElementById('dailyDoubleContainer');
+            dailyDoubleContainer.innerHTML = 'Waiting for the wager to be set...<br><br>';
+            dailyDoubleContainer.style.display = 'none';
         });
 
         function unlockQuestion() {
@@ -488,7 +536,7 @@
         }
 
         socket.on('reUnlockQuestion', (room) => {
-            if (room.players.length == room.metadata.buzzedPlayers.length) {
+            if (room.players.length == room.metadata.buzzedPlayers.length || room.metadata.currentQuestion.dailydouble) {
                 socket.emit('endOfBuzzingAvailability', roomKey);
             } else {
                 unlockQuestion();
@@ -511,9 +559,6 @@
         });
 
         socket.on('buzzedPlayer', (currentPlayer) => {
-            const unlockQuestion = document.getElementById('unlockQuestion');
-            unlockQuestion.style.display = 'block';
-
             const buzzedPlayerInfo = document.getElementById('buzzedPlayerInfo');
             buzzedPlayerInfo.textContent = currentPlayer.name + ' is answering the question.';
             buzzedPlayerInfo.style.display = 'block';

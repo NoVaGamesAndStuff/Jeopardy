@@ -592,11 +592,9 @@ io.on('connection', (socket) => {
         io.to(roomKey).emit('getRoomInfo', { room, isHost });
     });
 
-
     socket.on('startGame', (roomKey) => {
         console.log('Starting the game...');
         const room = serverData.rooms.find(room => room.key === roomKey);
-        
         room.metadata.currentPlayer = room.players[0].id;
 
         let obj = {}; // emptyObj exists to pass an empty object to host and player emits since they still need a second parameter
@@ -613,7 +611,6 @@ io.on('connection', (socket) => {
         entityName = 'pc';
         obj = room.board;
         io.to(room.pc.id).emit('gameStartView', { entityName, obj });
-        
     });
 
     socket.on('setInitialHostView', (roomKey) => {
@@ -635,6 +632,28 @@ io.on('connection', (socket) => {
         
         room.metadata.currentQuestion = questionInfo;
         io.to(room.host.id).emit('questionSelected', questionInfo);
+        
+        if (room.metadata.currentQuestion.dailydouble) {
+            console.log('Daily Double reached!');
+            room.metadata.currentlyBuzzedPlayer = room.metadata.currentPlayer;
+            var currentPlayerScore = getPlayer(room.players, room.metadata.currentlyBuzzedPlayer).score;
+            io.to(room.metadata.currentlyBuzzedPlayer).emit('dailyDoublePrompt', currentPlayerScore);
+        }
+    });
+
+    socket.on('setPlayerWager', ({ roomKey, wager }) => {
+        const room = serverData.rooms.find(room => room.key === roomKey);
+        let currentPlayerName;
+        for (let i = 0; i < room.players.length; i++) {
+            var player = room.players[i];
+            if (player.id == room.metadata.currentlyBuzzedPlayer) {
+                player.wager = wager;
+                currentPlayerName = player.name;
+                break;
+            }
+        }
+
+        io.to(room.host.id).emit('dailyDoubleHostView', { wager, currentPlayerName });
     });
 
     socket.on('unlockQuestion', (roomKey) => {
@@ -690,7 +709,13 @@ io.on('connection', (socket) => {
         for (let i = 0; i < room.players.length; i++) {
             var player = room.players[i];
             if (player.id == room.metadata.currentlyBuzzedPlayer) {
-                player.score += room.metadata.currentQuestion.value;
+                if (room.metadata.currentQuestion.dailydouble) {
+                    player.score += parseInt(player.wager);
+                    player.wager = 0;
+                } else {
+                    player.score += room.metadata.currentQuestion.value;
+                }
+
                 break;
             }
         }
@@ -713,7 +738,12 @@ io.on('connection', (socket) => {
         for (let i = 0; i < room.players.length; i++) {
             var player = room.players[i];
             if (player.id == room.metadata.currentlyBuzzedPlayer) {
-                player.score -= room.metadata.currentQuestion.value;
+                if (room.metadata.currentQuestion.dailydouble) {
+                    player.score -= parseInt(player.wager);
+                    player.wager = 0;
+                } else {
+                    player.score -= room.metadata.currentQuestion.value;
+                }
                 break;
             }
         }
@@ -743,16 +773,14 @@ app.post('/joinRoom', (req, res) => {
     let room = serverData.rooms.find(room => room.key === roomKey);
 
     if (room) {
-        if(isPlayerNameUnique(room.players, displayName)){
+        if (isPlayerNameUnique(room.players, displayName)) {
             let player = { name: displayName, score: 0, id: null };
             room.players.push(player);
             res.status(200).json({ room });
-        }
-        else if (!isPlayerNameUnique(room.players, displayName)){
+        } else if (!isPlayerNameUnique(room.players, displayName)) {
             console.log(`${displayName} is taken. Please choose a different name`);
             res.status(400).json({error: 'Name is already taken'});
         }
-        
     } else {
         res.status(404).json({ error: 'Room not found' });
     }
